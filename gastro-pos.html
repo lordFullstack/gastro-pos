@@ -1,0 +1,1220 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+ <meta charset="UTF-8"/>
+ <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
+ <meta name="theme-color" content="#F5A623"/>
+ <meta name="apple-mobile-web-app-capable" content="yes"/>
+ <title>GASTRO POS v1.0</title>
+ <style>
+ *{box-sizing:border-box;margin:0;padding:0}
+ body{background:#0D0F0E}
+ #root{height:100vh}
+ #loading{height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#0D0F0E;gap:16px}
+ .logo-load{width:56px;height:56px;border-radius:14px;background:#F5A623;display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:900;color:#0D0F0E;font-family:sans-serif}
+ .text-load{color:#8A9490;font-size:13px;font-family:monospace;letter-spacing:.08em}
+ @keyframes spin{to{transform:rotate(360deg)}}
+ .spinner-load{width:20px;height:20px;border:2px solid #2A3330;border-top-color:#F5A623;border-radius:50%;animation:spin .8s linear infinite}
+ </style>
+</head>
+<body>
+ <div id="loading">
+ <div class="logo-load">G</div>
+ <div class="text-load">CARGANDO GASTRO POS...</div>
+ <div class="spinner-load"></div>
+ </div>
+ <div id="root" style="display:none"></div>
+ <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+ <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+ <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+ <script type="text/babel">
+const {useState,useMemo,useCallback,useEffect,useReducer,createContext,useContext}=React;
+
+// ═══ CSS ═══
+const GlobalCSS=()=><style>{`
+ @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Mono:wght@300;400;500&display=swap');
+ *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+ :root{
+ --bg:#0D0F0E;--surface:#161A18;--el:#1E2421;--border:#2A3330;
+ --amber:#F5A623;--amber-d:#C4841A;--amber-g:rgba(245,166,35,.12);
+ --green:#3DDC84;--green-g:rgba(61,220,132,.15);
+ --red:#FF4D4D;--red-g:rgba(255,77,77,.15);
+ --blue:#4D9FFF;--blue-g:rgba(77,159,255,.12);
+ --purple:#C084FC;--purple-g:rgba(192,132,252,.12);
+ --orange:#FF8C42;--orange-g:rgba(255,140,66,.13);
+ --t1:#F0EDE8;--t2:#8A9490;--t3:#4A5550;
+ }
+ html,body,#root{height:100%;background:var(--bg);color:var(--t1);font-family:'Syne',sans-serif;-webkit-font-smoothing:antialiased;overscroll-behavior:none}
+ ::-webkit-scrollbar{width:4px;height:4px}
+ ::-webkit-scrollbar-track{background:transparent}
+ ::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+ input,select,textarea,button{font-family:'Syne',sans-serif}
+ @keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+ @keyframes slideIn{from{opacity:0;transform:translateX(16px)}to{opacity:1;transform:translateX(0)}}
+ @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+ @keyframes spin2{to{transform:rotate(360deg)}}
+ @keyframes toast{0%{opacity:0;transform:translateY(10px)}15%,80%{opacity:1;transform:translateY(0)}100%{opacity:0;transform:translateY(-6px)}}
+ @keyframes syncRing{0%{box-shadow:0 0 0 0 rgba(61,220,132,.5)}70%{box-shadow:0 0 0 8px rgba(61,220,132,0)}100%{box-shadow:0 0 0 0 rgba(61,220,132,0)}}
+ .fu{animation:fadeUp .22s ease both}
+ .si{animation:slideIn .25s ease both}
+ .spin{animation:spin2 1s linear infinite}
+`}</style>;
+
+// ═══ DATOS ═══
+const ROLES={
+ admin:{label:"Administrador",icon:"",color:"#F5A623",perms:["pos","pos.discount","orders","orders.cancel","inventory","inventory.edit","credits","credits.edit","reports","settings","users"]},
+ cajero:{label:"Cajero",icon:"",color:"#4D9FFF",perms:["pos","orders","credits","reports"]},
+ mesero:{label:"Mesero",icon:"",color:"#3DDC84",perms:["pos","orders"]},
+ cocina:{label:"Cocina",icon:"‍",color:"#FF8C42",perms:["orders"]},
+};
+const USERS=[
+ {id:"u1",name:"Carlos Mendoza",pin:"1234",role:"admin"},
+ {id:"u2",name:"Ana García",pin:"2222",role:"cajero"},
+ {id:"u3",name:"Luis Torres",pin:"3333",role:"mesero"},
+ {id:"u4",name:"María Ruiz",pin:"4444",role:"cocina"},
+];
+const CATS=[
+ {id:"all",label:"Todo",icon:"",color:"var(--t2)"},
+ {id:"proteina",label:"Proteína",icon:"",color:"#FF8C42"},
+ {id:"carbohidrato",label:"Carbohidratos",icon:"",color:"#F5A623"},
+ {id:"ensalada",label:"Ensalada",icon:"",color:"#3DDC84"},
+ {id:"bebidas",label:"Bebidas",icon:"",color:"#4D9FFF"},
+];
+const INIT_PRODUCTS=[
+ {id:"p1",name:"Pechuga a la Plancha",cat:"proteina",price:18000,cost:7000,stock:20,minStock:5,sku:"PRO-001",variants:[]},
+ {id:"p2",name:"Lomo de Res",cat:"proteina",price:24000,cost:9500,stock:15,minStock:4,sku:"PRO-002",variants:[{name:"Término medio",extra:0},{name:"Bien cocido",extra:0}]},
+ {id:"p3",name:"Pollo BBQ",cat:"proteina",price:20000,cost:8000,stock:12,minStock:4,sku:"PRO-003",variants:[]},
+ {id:"p4",name:"Arroz Blanco",cat:"carbohidrato",price:5000,cost:1500,stock:50,minStock:10,sku:"CAR-001",variants:[]},
+ {id:"p5",name:"Pasta Integral",cat:"carbohidrato",price:12000,cost:4000,stock:18,minStock:5,sku:"CAR-002",variants:[{name:"Salsa roja",extra:0},{name:"Salsa blanca",extra:0}]},
+ {id:"p6",name:"Papa al Vapor",cat:"carbohidrato",price:4500,cost:1200,stock:30,minStock:8,sku:"CAR-003",variants:[]},
+ {id:"p7",name:"Ensalada Verde",cat:"ensalada",price:8000,cost:2500,stock:25,minStock:6,sku:"ENS-001",variants:[]},
+ {id:"p8",name:"Ensalada César",cat:"ensalada",price:11000,cost:3500,stock:20,minStock:5,sku:"ENS-002",variants:[{name:"Sin pollo",extra:-2},{name:"Con pollo",extra:0}]},
+ {id:"p9",name:"Ensalada de Frutas",cat:"ensalada",price:7000,cost:2000,stock:15,minStock:4,sku:"ENS-003",variants:[]},
+ {id:"p10",name:"Agua Natural",cat:"bebidas",price:2500,cost:800,stock:60,minStock:15,sku:"BEB-001",variants:[{name:"500ml",extra:0},{name:"1L",extra:1.5}]},
+ {id:"p11",name:"Jugo Natural",cat:"bebidas",price:5000,cost:1500,stock:30,minStock:8,sku:"BEB-002",variants:[{name:"Naranja",extra:0},{name:"Zanahoria",extra:0},{name:"Verde",extra:1}]},
+ {id:"p12",name:"Té / Infusión",cat:"bebidas",price:3500,cost:600,stock:40,minStock:10,sku:"BEB-003",variants:[]},
+];
+const INIT_CLIENTS=[
+ {id:"c1",name:"Restaurante El Fogón",contact:"Marcos Díaz",phone:"555-0101",creditLimit:1500000,balance:320500,status:"active",riskLevel:"low",transactions:[]},
+ {id:"c2",name:"Catering Buena Mesa",contact:"Luisa Vargas",phone:"555-0202",creditLimit:800000,balance:780000,status:"active",riskLevel:"high",transactions:[]},
+ {id:"c3",name:"Hotel Gran Palacio",contact:"Roberto Kim",phone:"555-0303",creditLimit:3000000,balance:0,status:"active",riskLevel:"low",transactions:[]},
+ {id:"c4",name:"Pupusería Don Chico",contact:"Ana Flores",phone:"555-0404",creditLimit:500000,balance:500000,status:"suspended",riskLevel:"critical",transactions:[]},
+];
+
+// ═══ STORE ═══
+const initialState={
+ session:null,products:INIT_PRODUCTS,clients:INIT_CLIENTS,
+ orders:[],activeOrder:null,orderCounter:1,
+ isOnline:true,notifications:[],
+ company:{name:"Mi Restaurante",tagline:"Comida saludable y deliciosa",address:"Calle Principal #123",phone:"555-0000",email:"",logo:"",footerMsg:"¡Gracias por su visita!"},
+};
+let _nid=1;
+const addN=(state,msg,type="info")=>[...state.notifications.slice(-4),{id:_nid++,msg,type}];
+function reducer(state,action){
+ switch(action.type){
+ case"LOGIN": return{...state,session:action.p,notifications:addN(state,`Bienvenido, ${action.p.user.name.split(" ")[0]}`,"success")};
+ case"LOGOUT": return{...state,session:null,activeOrder:null};
+ case"SET_ONLINE":return{...state,isOnline:action.val,notifications:addN(state,action.val?"Conexión restaurada":"Modo offline",action.val?"success":"warning")};
+ case"SAVE_PRODUCT":{const e=state.products.find(p=>p.id===action.p.id);return{...state,products:e?state.products.map(p=>p.id===action.p.id?action.p:p):[...state.products,action.p],notifications:addN(state,`"${action.p.name}" guardado`,"success")};}
+ case"ADJUST_STOCK":return{...state,products:state.products.map(p=>p.id===action.id?{...p,stock:Math.max(0,p.stock+action.delta)}:p),notifications:addN(state,`Stock ajustado ${action.delta>0?"+":""}${action.delta}`,"info")};
+ case"NEW_ORDER":return{...state,activeOrder:{id:`#${String(state.orderCounter).padStart(4,"0")}`,table:action.table,type:action.ot,items:[],discount:0,note:"",status:"open",createdAt:new Date().toISOString()},orderCounter:state.orderCounter+1};
+ case"ADD_ITEM":{const o=state.activeOrder;if(!o)return state;const key=`${action.item.productId}-${action.item.variant||""}`;const ex=o.items.find(i=>i.key===key);return{...state,activeOrder:{...o,items:ex?o.items.map(i=>i.key===key?{...i,qty:i.qty+1}:i):[...o.items,{...action.item,key,qty:1}]}};}
+ case"REMOVE_ITEM":{const o=state.activeOrder;return{...state,activeOrder:{...o,items:o.items.map(i=>i.key===action.key?{...i,qty:i.qty-1}:i).filter(i=>i.qty>0)}};}
+ case"SET_DISCOUNT":return{...state,activeOrder:{...state.activeOrder,discount:action.v}};
+ case"SET_NOTE": return{...state,activeOrder:{...state.activeOrder,note:action.v}};
+ case"CANCEL_ORDER":return{...state,activeOrder:null};
+ case"CHARGE_ORDER":{const o=state.activeOrder;const closed={...o,status:"paid",paidAt:new Date().toISOString(),paymentMethod:action.method,totalPaid:action.total,cashier:state.session?.user.name};const products=state.products.map(p=>{const it=o.items.find(i=>i.productId===p.id);return it?{...p,stock:Math.max(0,p.stock-it.qty)}:p;});return{...state,activeOrder:null,orders:[closed,...state.orders],products,notifications:addN(state,"Orden "+o.id+" cobrada — $"+Math.round(action.total).toLocaleString("es-CO")+" COP","success")};}
+ case"ADD_CLIENT":return{...state,clients:[...state.clients,action.p],notifications:addN(state,`"${action.p.name}" creado`,"success")};
+ case"ADD_CREDIT_TX":return{...state,clients:state.clients.map(c=>{if(c.id!==action.cid)return c;const delta=action.tx.type==="charge"?action.tx.amount:-action.tx.amount;const balance=Math.max(0,c.balance+delta);const u=(balance/c.creditLimit)*100;const riskLevel=u>=95?"critical":u>=75?"high":u>=40?"medium":"low";return{...c,balance,riskLevel,transactions:[...c.transactions,{...action.tx,id:`tx${Date.now()}`,date:new Date().toISOString(),balance}]};})};
+ case"SAVE_COMPANY":return{...state,company:{...state.company,...action.p},notifications:addN(state,"Configuración guardada","success")};
+ case"DISMISS_NOTIF":return{...state,notifications:state.notifications.filter(n=>n.id!==action.id)};
+ default:return state;
+ }
+}
+const Ctx=createContext(null);
+const useStore=()=>useContext(Ctx);
+const fmt=n=>'$'+Math.round(Number(n)).toLocaleString('es-CO')+' COP';
+const mpct=(a,b)=>b>0?Math.round(((a-b)/a)*100):0;
+
+// ═══ BASE COMPONENTS ═══
+const Badge=({variant="default",children,dot})=>{
+ const v={default:{bg:"var(--el)",c:"var(--t2)",b:"var(--border)"},success:{bg:"var(--green-g)",c:"var(--green)",b:"rgba(61,220,132,.3)"},warning:{bg:"var(--amber-g)",c:"var(--amber)",b:"rgba(245,166,35,.3)"},danger:{bg:"var(--red-g)",c:"var(--red)",b:"rgba(255,77,77,.3)"},info:{bg:"var(--blue-g)",c:"var(--blue)",b:"rgba(77,159,255,.3)"},purple:{bg:"var(--purple-g)",c:"var(--purple)",b:"rgba(192,132,252,.3)"},orange:{bg:"var(--orange-g)",c:"var(--orange)",b:"rgba(255,140,66,.3)"}}[variant]||{bg:"var(--el)",c:"var(--t2)",b:"var(--border)"};
+ return <span style={{display:"inline-flex",alignItems:"center",gap:5,padding:"3px 9px",borderRadius:6,background:v.bg,color:v.c,border:`1px solid ${v.b}`,fontSize:10,fontWeight:600,letterSpacing:".06em",textTransform:"uppercase",fontFamily:"'DM Mono',monospace",whiteSpace:"nowrap"}}>{dot&&<span style={{width:5,height:5,borderRadius:"50%",background:v.c,animation:"pulse 2s infinite"}}/>}{children}</span>;
+};
+
+const Btn=({v="secondary",sz="md",children,onClick,icon,disabled,full,style:sx={}})=>{
+ const [h,setH]=useState(false);
+ const s={sm:{p:"7px 12px",fs:11,mh:34},md:{p:"10px 18px",fs:13,mh:44},lg:{p:"13px 22px",fs:15,mh:54}}[sz];
+ const vs={primary:{bg:h?"var(--amber-d)":"var(--amber)",c:"#0D0F0E",b:"transparent"},secondary:{bg:h?"#252C29":"var(--el)",c:"var(--t1)",b:"var(--border)"},ghost:{bg:h?"var(--el)":"transparent",c:"var(--t2)",b:"transparent"},danger:{bg:h?"rgba(255,77,77,.22)":"var(--red-g)",c:"var(--red)",b:"rgba(255,77,77,.2)"},success:{bg:h?"rgba(61,220,132,.22)":"var(--green-g)",c:"var(--green)",b:"rgba(61,220,132,.2)"},amber:{bg:h?"rgba(245,166,35,.22)":"var(--amber-g)",c:"var(--amber)",b:"rgba(245,166,35,.2)"}}[v]||{bg:"var(--el)",c:"var(--t1)",b:"var(--border)"};
+ return <button disabled={disabled} onClick={onClick} onMouseEnter={()=>setH(true)} onMouseLeave={()=>setH(false)} style={{display:"inline-flex",alignItems:"center",justifyContent:"center",gap:7,padding:s.p,minHeight:s.mh,fontSize:s.fs,fontWeight:600,background:vs.bg,color:vs.c,border:`1px solid ${vs.b}`,borderRadius:9,cursor:disabled?"not-allowed":"pointer",opacity:disabled?.45:1,transition:"all .13s",width:full?"100%":"auto",userSelect:"none",WebkitTapHighlightColor:"transparent",...sx}}>{icon&&<span style={{fontSize:s.fs+2,lineHeight:1}}>{icon}</span>}{children}</button>;
+};
+
+const FInput=({label,value,onChange,placeholder,type="text",prefix,suffix,required})=>{
+ const [f,setF]=useState(false);
+ return <div style={{display:"flex",flexDirection:"column",gap:5}}>
+ {label&&<label style={{fontSize:10,color:"var(--t3)",fontFamily:"'DM Mono',monospace",letterSpacing:".08em",textTransform:"uppercase",fontWeight:600}}>{label}{required&&<span style={{color:"var(--red)",marginLeft:3}}>*</span>}</label>}
+ <div style={{position:"relative"}}>
+ {prefix&&<span style={{position:"absolute",left:11,top:"50%",transform:"translateY(-50%)",color:"var(--t3)",fontFamily:"'DM Mono',monospace",fontSize:13,pointerEvents:"none"}}>{prefix}</span>}
+ <input type={type} value={value} onChange={onChange} placeholder={placeholder} style={{width:"100%",padding:"10px 14px",minHeight:42,background:"var(--el)",border:`1px solid ${f?"var(--amber)":"var(--border)"}`,borderRadius:9,color:"var(--t1)",fontSize:13,outline:"none",transition:"border-color .15s",paddingLeft:prefix?30:14,paddingRight:suffix?40:14}} onFocus={()=>setF(true)} onBlur={()=>setF(false)}/>
+ {suffix&&<span style={{position:"absolute",right:12,top:"50%",transform:"translateY(-50%)",color:"var(--t3)",fontFamily:"'DM Mono',monospace",fontSize:12,pointerEvents:"none"}}>{suffix}</span>}
+ </div>
+ </div>;
+};
+
+const Modal=({children,onClose,maxW=520,title,subtitle})=>(
+ <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.8)",backdropFilter:"blur(5px)",zIndex:300,display:"flex",alignItems:"center",justifyContent:"center",padding:16}} onClick={e=>e.target===e.currentTarget&&onClose()}>
+ <div className="si" style={{width:"100%",maxWidth:maxW,background:"var(--surface)",border:"1px solid var(--border)",borderRadius:18,overflow:"hidden",boxShadow:"0 30px 80px rgba(0,0,0,.6)"}}>
+ {(title||subtitle)&&<div style={{padding:"18px 22px",borderBottom:"1px solid var(--border)",display:"flex",alignItems:"center",justifyContent:"space-between"}}><div>{title&&<div style={{fontSize:15,fontWeight:800}}>{title}</div>}{subtitle&&<div style={{fontSize:11,color:"var(--t3)",fontFamily:"'DM Mono',monospace",marginTop:2}}>{subtitle}</div>}</div><button onClick={onClose} style={{width:30,height:30,borderRadius:7,background:"var(--el)",border:"1px solid var(--border)",color:"var(--t2)",cursor:"pointer",fontSize:16,display:"flex",alignItems:"center",justifyContent:"center"}}>×</button></div>}
+ {children}
+ </div>
+ </div>
+);
+
+
+// ═══ LOGIN ═══
+const PinPad=({onComplete})=>{
+ const [pin,setPin]=useState("");
+ const hit=useCallback(k=>{
+ if(k==="⌫"){setPin(p=>p.slice(0,-1));return;}
+ if(k==="C"){setPin("");return;}
+ const next=pin+k;setPin(next);
+ if(next.length===4){setTimeout(()=>{onComplete(next);setPin("");},100);}
+ },[pin,onComplete]);
+ useEffect(()=>{
+ const h=e=>{if(e.key>="0"&&e.key<="9")hit(e.key);if(e.key==="Backspace")hit("⌫");if(e.key==="Escape")hit("C");};
+ window.addEventListener("keydown",h);return()=>window.removeEventListener("keydown",h);
+ },[hit]);
+ return <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:20}}>
+ <div style={{display:"flex",gap:12}}>{[0,1,2,3].map(i=><div key={i} style={{width:13,height:13,borderRadius:"50%",background:i<pin.length?"var(--amber)":"var(--border)",transition:"background .12s,transform .12s",transform:i<pin.length?"scale(1.2)":"scale(1)"}}/>)}</div>
+ <div style={{display:"grid",gridTemplateColumns:"repeat(3,68px)",gap:8}}>
+ {["1","2","3","4","5","6","7","8","9","C","0","⌫"].map(k=>(
+ <button key={k} onClick={()=>hit(k)} style={{width:68,height:68,borderRadius:12,background:k==="⌫"||k==="C"?"var(--el)":"var(--surface)",border:"1px solid var(--border)",color:k==="⌫"?"var(--red)":k==="C"?"var(--t3)":"var(--t1)",fontSize:20,fontFamily:"'DM Mono',monospace",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",userSelect:"none"}}
+ onMouseDown={e=>e.currentTarget.style.transform="scale(.92)"} onMouseUp={e=>e.currentTarget.style.transform="scale(1)"} onMouseLeave={e=>e.currentTarget.style.transform="scale(1)"}>
+ {k}
+ </button>
+ ))}
+ </div>
+ </div>;
+};
+
+const LoginScreen=()=>{
+ const {dispatch}=useStore();
+ const [step,setStep]=useState("users");
+ const [user,setUser]=useState(null);
+ const [err,setErr]=useState("");const [at,setAt]=useState(0);
+ const [locked,setLocked]=useState(false);const [lockT,setLockT]=useState(0);
+ useEffect(()=>{
+ if(!locked)return;let t=30;setLockT(t);
+ const iv=setInterval(()=>{t--;setLockT(t);if(t<=0){clearInterval(iv);setLocked(false);setAt(0);}},1000);
+ return()=>clearInterval(iv);
+ },[locked]);
+ const handlePin=pin=>{
+ if(locked)return;
+ if(pin===user.pin){dispatch({type:"LOGIN",p:{user,role:ROLES[user.role],perms:ROLES[user.role].perms,startedAt:new Date().toISOString()}});}
+ else{const a=at+1;setAt(a);setErr(a>=3?"Bloqueado 30s":`PIN incorrecto · ${3-a} intento(s)`);if(a>=3)setLocked(true);}
+ };
+ return <div style={{minHeight:"100vh",display:"flex",flexDirection:"column",background:"var(--bg)",overflow:"auto",position:"relative"}}>
+ <div style={{position:"fixed",inset:0,pointerEvents:"none",backgroundImage:"linear-gradient(var(--border) 1px,transparent 1px),linear-gradient(90deg,var(--border) 1px,transparent 1px)",backgroundSize:"44px 44px",opacity:.3}}/>
+ <div style={{padding:"24px 24px 0",display:"flex",alignItems:"center",gap:12,position:"relative",zIndex:1}}>
+ <div style={{width:40,height:40,borderRadius:10,background:"var(--amber)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,fontWeight:900,color:"#0D0F0E"}}>G</div>
+ <div><div style={{fontSize:16,fontWeight:800}}>GASTRO POS</div><div style={{fontSize:9,color:"var(--amber)",fontFamily:"'DM Mono',monospace",letterSpacing:".1em"}}>SISTEMA DE GESTIÓN v1.0</div></div>
+ <div style={{marginLeft:"auto",display:"flex",alignItems:"center",gap:6}}>
+ <span style={{width:6,height:6,borderRadius:"50%",background:"var(--green)",animation:"pulse 2s infinite",display:"block"}}/>
+ <span style={{fontSize:9,color:"var(--t3)",fontFamily:"'DM Mono',monospace"}}>{new Date().toLocaleDateString("es",{day:"numeric",month:"short"}).toUpperCase()}</span>
+ </div>
+ </div>
+ <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",padding:"24px",position:"relative",zIndex:1}}>
+ <div style={{width:"100%",maxWidth:420,background:"var(--surface)",border:"1px solid var(--border)",borderRadius:20,padding:"32px 28px",boxShadow:"0 24px 60px rgba(0,0,0,.4)"}}>
+ <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:24}}>
+ {["Perfil","PIN"].map((s,i)=>{const idx=step==="users"?0:1;const done=i<idx,act=i===idx;return(
+ <div key={i} style={{display:"flex",alignItems:"center",gap:8}}>
+ <div style={{width:26,height:26,borderRadius:7,background:done?"var(--green)":act?"var(--amber)":"var(--el)",border:`1px solid ${done?"var(--green)":act?"var(--amber)":"var(--border)"}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:700,fontFamily:"'DM Mono',monospace",color:(done||act)?"#0D0F0E":"var(--t3)",transition:"all .2s"}}>{done?"":i+1}</div>
+ <span style={{fontSize:12,color:act?"var(--t1)":"var(--t3)",fontWeight:act?600:400}}>{s}</span>
+ {i<1&&<div style={{width:20,height:1,background:"var(--border)",margin:"0 4px"}}/>}
+ </div>
+ );})}
+ </div>
+ {step==="users"?(
+ <div className="fu" style={{display:"flex",flexDirection:"column",gap:10}}>
+ <div style={{fontSize:11,color:"var(--t3)",fontFamily:"'DM Mono',monospace",letterSpacing:".1em",textTransform:"uppercase",marginBottom:6}}>Selecciona tu perfil</div>
+ {USERS.map((u,i)=>{const r=ROLES[u.role];return(
+ <button key={u.id} onClick={()=>{setUser(u);setStep("pin");setErr("");setAt(0);}} className="fu"
+ style={{display:"flex",alignItems:"center",gap:13,padding:"13px 16px",background:"transparent",border:"1px solid var(--border)",borderRadius:12,cursor:"pointer",textAlign:"left",width:"100%",transition:"all .14s",animationDelay:`${i*.05}s`,animationFillMode:"both"}}
+ onMouseEnter={e=>{e.currentTarget.style.background="var(--el)";e.currentTarget.style.borderColor=`${r.color}40`;}}
+ onMouseLeave={e=>{e.currentTarget.style.background="transparent";e.currentTarget.style.borderColor="var(--border)";}}>
+ <div style={{width:42,height:42,borderRadius:11,flexShrink:0,background:`${r.color}18`,border:`1px solid ${r.color}35`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18}}>{r.icon}</div>
+ <div style={{flex:1}}><div style={{fontSize:13,fontWeight:700,color:"var(--t1)"}}>{u.name}</div><div style={{fontSize:10,color:r.color,fontFamily:"'DM Mono',monospace",letterSpacing:".06em",textTransform:"uppercase",marginTop:2}}>{r.label}</div></div>
+ <span style={{fontSize:18,color:"var(--t3)"}}></span>
+ </button>
+ );})}
+ </div>
+ ):(
+ <div className="fu" style={{display:"flex",flexDirection:"column",alignItems:"center",gap:22}}>
+ {user&&(()=>{const r=ROLES[user.role];return(
+ <div style={{display:"flex",alignItems:"center",gap:12,padding:"12px 18px",background:"var(--el)",border:`1px solid ${r.color}30`,borderRadius:12,width:"100%"}}>
+ <div style={{width:42,height:42,borderRadius:10,background:`${r.color}18`,border:`1px solid ${r.color}40`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20}}>{r.icon}</div>
+ <div><div style={{fontSize:14,fontWeight:700}}>{user.name}</div><div style={{fontSize:10,color:r.color,fontFamily:"'DM Mono',monospace",letterSpacing:".06em",textTransform:"uppercase",marginTop:2}}>{r.label}</div></div>
+ </div>
+ );})()}
+ {err&&<div style={{padding:"9px 14px",background:locked?"var(--red-g)":"rgba(255,77,77,.07)",border:"1px solid rgba(255,77,77,.22)",borderRadius:9,width:"100%",fontSize:12,color:"var(--red)",fontFamily:"'DM Mono',monospace"}}>{locked?` ${err} (${lockT}s)`:` ${err}`}</div>}
+ <PinPad onComplete={handlePin}/>
+ <button onClick={()=>{setStep("users");setUser(null);setErr("");}} style={{background:"transparent",border:"none",color:"var(--t3)",fontSize:12,cursor:"pointer",padding:"6px 12px",borderRadius:7}} onMouseEnter={e=>e.currentTarget.style.color="var(--t2)"} onMouseLeave={e=>e.currentTarget.style.color="var(--t3)"}> Cambiar usuario</button>
+ </div>
+ )}
+ </div>
+ </div>
+ </div>;
+};
+
+
+// ═══ TICKET ═══
+const TicketModal=({order,company,onClose})=>{
+ const handlePrint=()=>{
+ const w=window.open("","_blank","width=400,height=650");
+ const logoHtml=company.logo
+ ?'<img src="'+company.logo+'" style="max-width:70px;max-height:70px;display:block;margin:0 auto 6px;border-radius:6px"/>'
+ :'<div style="font-size:22px;font-weight:900;letter-spacing:.1em">'+((company.name||"GP").slice(0,2).toUpperCase())+'</div>';
+ const itemsHtml=(order.items||[]).map(function(i){
+ return '<div style="display:flex;justify-content:space-between"><span>'+i.name+(i.variantLabel?' ('+i.variantLabel+')':'')+'</span><span>'+i.qty+'x$'+Math.round(i.price).toLocaleString('es-CO')+'</span></div><div style="text-align:right;font-weight:700">$'+Math.round(i.price*i.qty).toLocaleString('es-CO')+'</div>';
+ }).join('');
+ const tipoLabel=order.type==="mesa"?"Mesa "+(order.table||""):(order.type==="llevar"?"Para llevar":"Delivery");
+ const html='<!DOCTYPE html><html><head><title>Ticket '+order.id+'</title>'
+ +'<style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:monospace;font-size:12px;padding:20px;max-width:300px;color:#111}'
+ +'.c{text-align:center}.r{text-align:right}.b{font-weight:700}'
+ +'.d{border-top:1px dashed #ccc;margin:8px 0}'
+ +'.row{display:flex;justify-content:space-between}'
+ +'@media print{button{display:none}}</style>'
+ +'</head><body>'
+ +'<div class="c">'+logoHtml
+ +'<div class="b" style="font-size:14px">'+(company.name||"Mi Restaurante")+'</div>'
+ +(company.tagline?'<div style="font-size:11px;color:#666">'+company.tagline+'</div>':'')
+ +(company.address?'<div style="font-size:11px;color:#666">'+company.address+'</div>':'')
+ +(company.phone?'<div style="font-size:11px;color:#666">Tel: '+company.phone+'</div>':'')
+ +'</div>'
+ +'<div class="d"></div>'
+ +'<div class="row"><span>Orden:</span><span class="b">'+order.id+'</span></div>'
+ +'<div class="row"><span>Tipo:</span><span>'+tipoLabel+'</span></div>'
+ +'<div class="row"><span>Cajero:</span><span>'+((order.cashier||"—").split(" ")[0])+'</span></div>'
+ +'<div class="row"><span>Fecha:</span><span>'+new Date(order.paidAt||Date.now()).toLocaleDateString("es")+'</span></div>'
+ +'<div class="d"></div>'
+ +itemsHtml
+ +'<div class="d"></div>'
+ +'<div class="row b" style="font-size:15px"><span>TOTAL</span><span>$'+Math.round(order.totalPaid||0).toLocaleString('es-CO')+' COP</span></div>'
+ +'<div class="row" style="color:#666"><span>Metodo</span><span>'+(order.paymentMethod||"—")+'</span></div>'
+ +'<div class="d"></div>'
+ +'<div class="c" style="font-size:11px;color:#666">'+(company.footerMsg||"Gracias por su visita!")+'</div>'
+ +'<scr'+'ipt>setTimeout(function(){window.print();},300);</scr'+'ipt>'
+ +'</body></html>';
+ w.document.write(html);
+ w.document.close();
+ };
+ return <Modal onClose={onClose} title="Vista Previa del Ticket" maxW={360}>
+ <div style={{padding:"16px 20px",maxHeight:440,overflowY:"auto"}}>
+ <div style={{background:"#fff",borderRadius:9,padding:"18px 14px",fontFamily:"'DM Mono',monospace",fontSize:11,color:"#111",lineHeight:1.7,boxShadow:"0 4px 20px rgba(0,0,0,.15)"}}>
+ <div style={{textAlign:"center",marginBottom:10}}>
+ {company.logo?<img src={company.logo} style={{maxWidth:60,maxHeight:60,display:"block",margin:"0 auto 5px",borderRadius:6}} alt="logo"/>:<div style={{fontSize:20,fontWeight:900,letterSpacing:".1em"}}>{(company.name||"GP").slice(0,2).toUpperCase()}</div>}
+ <div style={{fontWeight:700,fontSize:13}}>{company.name||"Mi Restaurante"}</div>
+ {company.tagline&&<div style={{fontSize:10,color:"#666"}}>{company.tagline}</div>}
+ {company.address&&<div style={{fontSize:10,color:"#666"}}>{company.address}</div>}
+ {company.phone&&<div style={{fontSize:10,color:"#666"}}>Tel: {company.phone}</div>}
+ </div>
+ <div style={{borderTop:"1px dashed #ccc",margin:"8px 0"}}/>
+ {[["Orden",order.id],["Tipo",order.type==="mesa"?`Mesa ${order.table}`:order.type==="llevar"?"Para llevar":"Delivery"],["Cajero",(order.cashier||"—").split(" ")[0]],["Fecha",new Date(order.paidAt||Date.now()).toLocaleDateString("es")],["Hora",new Date(order.paidAt||Date.now()).toLocaleTimeString("es",{hour:"2-digit",minute:"2-digit"})]].map(([l,v],i)=>(
+ <div key={i} style={{display:"flex",justifyContent:"space-between"}}><span style={{color:"#888"}}>{l}:</span><span style={{fontWeight:600}}>{v}</span></div>
+ ))}
+ <div style={{borderTop:"1px dashed #ccc",margin:"8px 0"}}/>
+ {(order.items||[]).map((item,i)=>(
+ <div key={i} style={{marginBottom:3}}>
+ <div style={{display:"flex",justifyContent:"space-between"}}><span style={{flex:1}}>{item.name}{item.variantLabel?` (${item.variantLabel})`:""}</span><span style={{marginLeft:6}}>{item.qty}x{fmt(item.price)}</span></div>
+ <div style={{textAlign:"right",fontWeight:700}}>{fmt(item.price*item.qty)}</div>
+ </div>
+ ))}
+ <div style={{borderTop:"1px dashed #ccc",margin:"8px 0"}}/>
+ <div style={{display:"flex",justifyContent:"space-between",fontWeight:900,fontSize:14}}><span>TOTAL</span><span>{fmt(order.totalPaid||0)}</span></div>
+ <div style={{display:"flex",justifyContent:"space-between",color:"#666",fontSize:10,marginTop:2}}><span>Método</span><span style={{textTransform:"capitalize"}}>{order.paymentMethod||"—"}</span></div>
+ <div style={{borderTop:"1px dashed #ccc",margin:"8px 0"}}/>
+ <div style={{textAlign:"center",fontSize:10,color:"#888"}}>{company.footerMsg||"¡Gracias por su visita!"}</div>
+ </div>
+ </div>
+ <div style={{padding:"12px 20px",borderTop:"1px solid var(--border)",display:"flex",gap:10,justifyContent:"flex-end"}}>
+ <Btn v="ghost" onClick={onClose}>Cerrar</Btn>
+ <Btn v="primary" icon="" onClick={handlePrint}>Imprimir</Btn>
+ </div>
+ </Modal>;
+};
+
+
+// ═══ POS ═══
+// Modal components extracted as proper components (no hooks in callbacks)
+const NewOrderModal=({onClose,onConfirm})=>{
+ const [type,setType]=useState("mesa");
+ const [table,setTable]=useState("");
+ return <Modal onClose={onClose} title="Nueva Orden" maxW={340}>
+ <div style={{padding:16,display:"flex",flexDirection:"column",gap:12}}>
+ <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8}}>
+ {[["mesa","","Mesa"],["llevar","","Llevar"],["delivery","","Delivery"]].map(([id,ic,lb])=>(
+ <button key={id} onClick={()=>setType(id)} style={{padding:"11px 6px",borderRadius:9,cursor:"pointer",textAlign:"center",background:type===id?"var(--amber-g)":"var(--el)",border:`1px solid ${type===id?"rgba(245,166,35,.3)":"var(--border)"}`,color:type===id?"var(--amber)":"var(--t2)",transition:"all .12s"}}>
+ <div style={{fontSize:18,marginBottom:3}}>{ic}</div>
+ <div style={{fontSize:11,fontWeight:600}}>{lb}</div>
+ </button>
+ ))}
+ </div>
+ {type==="mesa"&&<FInput label="Número de mesa" value={table} onChange={e=>setTable(e.target.value)} placeholder="Ej: 3"/>}
+ </div>
+ <div style={{padding:"12px 16px",borderTop:"1px solid var(--border)",display:"flex",gap:8,justifyContent:"flex-end"}}>
+ <Btn v="ghost" onClick={onClose}>Cancelar</Btn>
+ <Btn v="primary" disabled={type==="mesa"&&!table} onClick={()=>{onConfirm(type,table||"Llevar");onClose();}}>Iniciar</Btn>
+ </div>
+ </Modal>;
+};
+
+const VariantModal=({product,onClose,onConfirm})=>{
+ const [sel,setSel]=useState(product.variants[0]?.name||"");
+ return <Modal onClose={onClose} title={product.name} subtitle="Selecciona variante" maxW={320}>
+ <div style={{padding:14,display:"flex",flexDirection:"column",gap:8}}>
+ {product.variants.map((v,i)=>(
+ <button key={i} onClick={()=>setSel(v.name)} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 16px",borderRadius:9,cursor:"pointer",background:sel===v.name?"var(--amber-g)":"var(--el)",border:`1px solid ${sel===v.name?"rgba(245,166,35,.3)":"var(--border)"}`,color:sel===v.name?"var(--amber)":"var(--t1)",transition:"all .12s"}}
+ onMouseEnter={e=>{if(sel!==v.name){e.currentTarget.style.background="var(--surface)";e.currentTarget.style.borderColor="var(--amber)";}}}
+ onMouseLeave={e=>{if(sel!==v.name){e.currentTarget.style.background="var(--el)";e.currentTarget.style.borderColor="var(--border)";;}}}>
+ <span style={{fontSize:13,fontWeight:600}}>{v.name}</span>
+ <span style={{fontFamily:"'DM Mono',monospace",fontSize:12}}>{v.extra===0?fmt(product.price):v.extra>0?`+${fmt(v.extra)}`:fmt(v.extra)}</span>
+ </button>
+ ))}
+ </div>
+ <div style={{padding:"12px 16px",borderTop:"1px solid var(--border)",display:"flex",gap:8,justifyContent:"flex-end"}}>
+ <Btn v="ghost" onClick={onClose}>Cancelar</Btn>
+ <Btn v="primary" disabled={!sel} onClick={()=>{const v=product.variants.find(x=>x.name===sel);onConfirm(v);onClose();}}>Añadir</Btn>
+ </div>
+ </Modal>;
+};
+
+const ChargeModal=({order,subtotal,discount,total,onClose,onCharge})=>{
+ const [method,setMethod]=useState("efectivo");
+ const [cash,setCash]=useState("");
+ const change=method==="efectivo"&&cash?Math.max(0,parseFloat(cash)-total):null;
+ const discAmt=subtotal*(discount/100);
+ return <Modal onClose={onClose} title="Cobrar Orden" subtitle={order?.id} maxW={360}>
+ <div style={{padding:16,display:"flex",flexDirection:"column",gap:12}}>
+ <div style={{background:"var(--el)",border:"1px solid var(--border)",borderRadius:9,overflow:"hidden"}}>
+ {[["Subtotal",fmt(subtotal)],["Descuento",`-${fmt(discAmt)}`],["TOTAL",fmt(total)]].map(([l,v],i)=>(
+ <div key={i} style={{display:"flex",justifyContent:"space-between",padding:"9px 14px",borderBottom:i<2?"1px solid var(--border)":"none",background:i===2?"var(--amber-g)":"transparent"}}>
+ <span style={{fontSize:i===2?13:11,fontWeight:i===2?800:400,color:i===2?"var(--amber)":"var(--t2)"}}>{l}</span>
+ <span style={{fontFamily:"'DM Mono',monospace",fontSize:i===2?18:12,fontWeight:i===2?800:500,color:i===2?"var(--amber)":"var(--t1)"}}>{v}</span>
+ </div>
+ ))}
+ </div>
+ <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8}}>
+ {[["efectivo","","Efectivo"],["tarjeta","","Tarjeta"],["transferencia","","Transfer"]].map(([id,ic,lb])=>(
+ <button key={id} onClick={()=>setMethod(id)} style={{padding:"10px 5px",borderRadius:9,cursor:"pointer",textAlign:"center",background:method===id?"var(--green-g)":"var(--el)",border:`1px solid ${method===id?"rgba(61,220,132,.3)":"var(--border)"}`,color:method===id?"var(--green)":"var(--t2)",transition:"all .12s"}}>
+ <div style={{fontSize:18,marginBottom:3}}>{ic}</div>
+ <div style={{fontSize:10,fontWeight:600}}>{lb}</div>
+ </button>
+ ))}
+ </div>
+ {method==="efectivo"&&<FInput label="Efectivo recibido" value={cash} onChange={e=>setCash(e.target.value)} prefix="$" type="number" placeholder={String(Math.round(total))}/>}
+ {change!==null&&<div style={{padding:"9px 14px",background:"var(--green-g)",border:"1px solid rgba(61,220,132,.25)",borderRadius:9,display:"flex",justifyContent:"space-between",alignItems:"center"}}><span style={{fontSize:12,color:"var(--t2)"}}>Vuelto</span><span style={{fontFamily:"'DM Mono',monospace",fontSize:18,fontWeight:700,color:"var(--green)"}}>{fmt(change)}</span></div>}
+ </div>
+ <div style={{padding:"12px 16px",borderTop:"1px solid var(--border)",display:"flex",gap:8,justifyContent:"flex-end"}}>
+ <Btn v="ghost" onClick={onClose}>Cancelar</Btn>
+ <Btn v="success" icon="" disabled={method==="efectivo"&&cash&&parseFloat(cash)<total} onClick={()=>onCharge(method)}>Confirmar Cobro</Btn>
+ </div>
+ </Modal>;
+};
+
+const POSModule=()=>{
+ const {state,dispatch}=useStore();
+ const {products,activeOrder,session}=state;
+ const [cat,setCat]=useState("all");
+ const [search,setSearch]=useState("");
+ const [showVM,setShowVM]=useState(null);
+ const [showNOM,setShowNOM]=useState(false);
+ const [showCM,setShowCM]=useState(false);
+ const [discount,setDiscount]=useState(0);
+ const [lastOrder,setLastOrder]=useState(null);
+ const [showTicket,setShowTicket]=useState(false);
+ const canDiscount=session?.perms.includes("pos.discount");
+
+ const visible=useMemo(()=>{
+ let l=products.filter(p=>p.price>0);
+ if(cat!=="all")l=l.filter(p=>p.cat===cat);
+ if(search){const q=search.toLowerCase();l=l.filter(p=>p.name.toLowerCase().includes(q));}
+ return l;
+ },[products,cat,search]);
+
+ const addProduct=useCallback(p=>{
+ if(p.stock===0)return;
+ if(p.variants?.length>0){setShowVM(p);return;}
+ dispatch({type:"ADD_ITEM",item:{productId:p.id,name:p.name,price:p.price,variant:null,variantLabel:null}});
+ },[dispatch]);
+
+ const subtotal=activeOrder?.items.reduce((s,i)=>s+i.price*i.qty,0)||0;
+ const discAmt=subtotal*(discount/100);
+ const total=subtotal-discAmt;
+
+ const handleCharge=method=>{
+ const closed={...activeOrder,status:"paid",paidAt:new Date().toISOString(),paymentMethod:method,totalPaid:total,cashier:session?.user.name,discount};
+ dispatch({type:"CHARGE_ORDER",method,total});
+ setLastOrder(closed);
+ setDiscount(0);setShowCM(false);
+ };
+
+ return <div style={{height:"100%",display:"flex",overflow:"hidden"}}>
+ {/* Catálogo */}
+ <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden",borderRight:"1px solid var(--border)"}}>
+ <div style={{padding:"10px 12px",borderBottom:"1px solid var(--border)"}}>
+ <div style={{position:"relative"}}>
+ <span style={{position:"absolute",left:11,top:"50%",transform:"translateY(-50%)",color:"var(--t3)",fontSize:14,pointerEvents:"none"}}></span>
+ <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Buscar..."
+ style={{width:"100%",padding:"8px 12px 8px 34px",minHeight:38,background:"var(--el)",border:"1px solid var(--border)",borderRadius:9,color:"var(--t1)",fontSize:12,outline:"none"}}
+ onFocus={e=>e.target.style.borderColor="var(--amber)"} onBlur={e=>e.target.style.borderColor="var(--border)"}/>
+ </div>
+ </div>
+ <div style={{display:"flex",gap:5,padding:"8px 12px",overflowX:"auto",borderBottom:"1px solid var(--border)",flexWrap:"nowrap",flexShrink:0}}>
+ {CATS.map(c=>(
+ <button key={c.id} onClick={()=>setCat(c.id)} style={{display:"flex",alignItems:"center",gap:4,padding:"5px 10px",borderRadius:20,cursor:"pointer",flexShrink:0,background:cat===c.id?"var(--amber-g)":"var(--el)",border:`1px solid ${cat===c.id?"rgba(245,166,35,.3)":"var(--border)"}`,color:cat===c.id?"var(--amber)":"var(--t2)",fontSize:11,fontWeight:600,whiteSpace:"nowrap"}}>{c.icon} {c.label}</button>
+ ))}
+ </div>
+ <div style={{flex:1,overflowY:"auto",padding:10,display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(120px,1fr))",gap:8,alignContent:"start"}}>
+ {visible.map((p,i)=>{
+ const out=p.stock===0;
+ const inOrder=activeOrder?.items.find(it=>it.productId===p.id);
+ const ct=CATS.find(c=>c.id===p.cat);
+ return <button key={p.id} className="fu" onClick={()=>!out&&addProduct(p)}
+ style={{padding:0,border:"none",background:"none",cursor:out?"not-allowed":"pointer",animationDelay:`${i*.015}s`,animationFillMode:"both"}}>
+ <div style={{padding:"11px 9px",background:inOrder?"var(--amber-g)":"var(--surface)",border:`1px solid ${inOrder?"rgba(245,166,35,.35)":out?"rgba(255,77,77,.15)":"var(--border)"}`,borderRadius:11,textAlign:"left",opacity:out?.5:1,transition:"all .14s",position:"relative",height:"100%",display:"flex",flexDirection:"column",gap:4}}
+ onMouseEnter={e=>{if(!out)e.currentTarget.style.borderColor=inOrder?"rgba(245,166,35,.5)":"var(--amber)";}}
+ onMouseLeave={e=>{e.currentTarget.style.borderColor=inOrder?"rgba(245,166,35,.35)":out?"rgba(255,77,77,.15)":"var(--border)";}}>
+ {inOrder&&<div style={{position:"absolute",top:5,right:5,width:18,height:18,borderRadius:"50%",background:"var(--amber)",color:"#0D0F0E",fontSize:9,fontWeight:800,fontFamily:"'DM Mono',monospace",display:"flex",alignItems:"center",justifyContent:"center"}}>{inOrder.qty}</div>}
+              <div style={{width:"100%",height:50,borderRadius:7,background:"var(--el)",marginBottom:4,display:"flex",alignItems:"center",justifyContent:"center",overflow:"hidden"}}>{p.image?<img src={p.image} style={{width:"100%",height:"100%",objectFit:"cover"}} alt={p.name}/>:<span style={{fontSize:20}}>{ct?.icon}</span>}</div>
+ <div style={{fontSize:11,fontWeight:700,lineHeight:1.3,color:"var(--t1)"}}>{p.name}</div>
+ <div style={{marginTop:"auto"}}>
+ <div style={{fontSize:13,fontWeight:800,fontFamily:"'DM Mono',monospace",color:inOrder?"var(--amber)":"var(--t1)"}}>{fmt(p.price)}</div>
+ {out?<Badge variant="danger">Agotado</Badge>:p.stock<=p.minStock?<Badge variant="warning">Bajo</Badge>:<span style={{fontSize:9,color:"var(--t3)",fontFamily:"'DM Mono',monospace"}}>Stock:{p.stock}</span>}
+ {p.variants?.length>0&&<div style={{fontSize:9,color:"var(--blue)",marginTop:2,fontFamily:"'DM Mono',monospace"}}>{p.variants.length} opciones</div>}
+ </div>
+ </div>
+ </button>;
+ })}
+ </div>
+ </div>
+
+ {/* Carrito */}
+ <div style={{width:300,display:"flex",flexDirection:"column",background:"var(--surface)",flexShrink:0}}>
+ {!activeOrder?(
+ <div style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:14,padding:20}}>
+ {lastOrder&&(
+ <div className="fu" style={{padding:"10px 16px",background:"var(--green-g)",border:"1px solid rgba(61,220,132,.3)",borderRadius:9,textAlign:"center",width:"100%"}}>
+ <div style={{fontSize:16,marginBottom:2}}></div>
+ <div style={{fontSize:12,fontWeight:700,color:"var(--green)",marginBottom:6}}>¡Orden {lastOrder.id} cobrada!</div>
+ <button onClick={()=>setShowTicket(true)} style={{padding:"5px 14px",background:"var(--amber-g)",border:"1px solid rgba(245,166,35,.3)",borderRadius:7,cursor:"pointer",fontSize:11,color:"var(--amber)",fontWeight:600}}> Ver Ticket</button>
+ </div>
+ )}
+ <div style={{fontSize:40,opacity:.2}}></div>
+ <div style={{fontSize:11,color:"var(--t3)",fontFamily:"'DM Mono',monospace",textAlign:"center",lineHeight:1.6}}>Sin orden activa</div>
+ <Btn v="primary" sz="lg" full icon="+" onClick={()=>setShowNOM(true)}>Nueva Orden</Btn>
+ {state.orders.length>0&&<div style={{fontSize:10,color:"var(--t3)",fontFamily:"'DM Mono',monospace"}}>{state.orders.length} orden(es) hoy</div>}
+ </div>
+ ):(
+ <>
+ <div style={{padding:"11px 13px",borderBottom:"1px solid var(--border)",display:"flex",alignItems:"center",justifyContent:"space-between",flexShrink:0}}>
+ <div>
+ <div style={{fontSize:13,fontWeight:800}}>{activeOrder.id}</div>
+ <div style={{fontSize:10,color:"var(--t2)",fontFamily:"'DM Mono',monospace",marginTop:1}}>{activeOrder.type==="mesa"?`Mesa ${activeOrder.table}`:activeOrder.type==="llevar"?"Llevar":"Delivery"}</div>
+ </div>
+ <div style={{display:"flex",gap:5}}>
+ <Btn v="amber" sz="sm" onClick={()=>setShowNOM(true)}>+</Btn>
+ <button onClick={()=>dispatch({type:"CANCEL_ORDER"})} style={{width:28,height:28,borderRadius:7,background:"var(--red-g)",border:"1px solid rgba(255,77,77,.2)",color:"var(--red)",cursor:"pointer",fontSize:13,display:"flex",alignItems:"center",justifyContent:"center"}}></button>
+ </div>
+ </div>
+ <div style={{flex:1,overflowY:"auto",padding:"4px 8px"}}>
+ {activeOrder.items.length===0
+ ?<div style={{padding:"20px 10px",textAlign:"center",color:"var(--t3)",fontSize:11,fontFamily:"'DM Mono',monospace"}}>Añade productos del catálogo</div>
+ :activeOrder.items.map((item,i)=>(
+ <div key={item.key} className="fu" style={{display:"flex",alignItems:"center",gap:7,padding:"8px 4px",borderBottom:"1px solid var(--border)",animationDelay:`${i*.03}s`,animationFillMode:"both"}}>
+ <div style={{flex:1,minWidth:0}}>
+ <div style={{fontSize:11,fontWeight:600,lineHeight:1.3}}>{item.name}</div>
+ {item.variantLabel&&<div style={{fontSize:9,color:"var(--amber)",fontFamily:"'DM Mono',monospace"}}>{item.variantLabel}</div>}
+ <div style={{fontSize:10,color:"var(--t2)",fontFamily:"'DM Mono',monospace"}}>{fmt(item.price)}/u</div>
+ </div>
+ <div style={{display:"flex",alignItems:"center",gap:2,flexShrink:0}}>
+ <button onClick={()=>dispatch({type:"REMOVE_ITEM",key:item.key})} style={{width:22,height:22,borderRadius:5,background:"var(--el)",border:"1px solid var(--border)",color:"var(--t2)",cursor:"pointer",fontSize:12,display:"flex",alignItems:"center",justifyContent:"center"}}>−</button>
+ <span style={{width:20,textAlign:"center",fontFamily:"'DM Mono',monospace",fontSize:12,fontWeight:700}}>{item.qty}</span>
+ <button onClick={()=>dispatch({type:"ADD_ITEM",item:{...item,qty:undefined}})} style={{width:22,height:22,borderRadius:5,background:"var(--el)",border:"1px solid var(--border)",color:"var(--amber)",cursor:"pointer",fontSize:12,display:"flex",alignItems:"center",justifyContent:"center"}}>+</button>
+ </div>
+ <div style={{fontFamily:"'DM Mono',monospace",fontSize:11,fontWeight:600,minWidth:44,textAlign:"right"}}>{fmt(item.price*item.qty)}</div>
+ </div>
+ ))
+ }
+ </div>
+ <div style={{padding:"5px 10px",borderTop:"1px solid var(--border)",flexShrink:0}}>
+ <input value={activeOrder.note||""} onChange={e=>dispatch({type:"SET_NOTE",v:e.target.value})} placeholder=" Nota de cocina..."
+ style={{width:"100%",padding:"6px 10px",background:"var(--el)",border:"1px solid var(--border)",borderRadius:7,color:"var(--t1)",fontSize:11,outline:"none"}}
+ onFocus={e=>e.target.style.borderColor="var(--amber)"} onBlur={e=>e.target.style.borderColor="var(--border)"}/>
+ </div>
+ {canDiscount&&(
+ <div style={{padding:"5px 10px",borderTop:"1px solid var(--border)",display:"flex",alignItems:"center",gap:5,flexShrink:0}}>
+ <span style={{fontSize:11,color:"var(--t2)",flex:1}}>Desc.</span>
+ {[0,5,10,15,20].map(d=>(
+ <button key={d} onClick={()=>setDiscount(d)} style={{padding:"3px 6px",borderRadius:5,cursor:"pointer",background:discount===d?"var(--amber-g)":"var(--el)",border:`1px solid ${discount===d?"rgba(245,166,35,.3)":"var(--border)"}`,color:discount===d?"var(--amber)":"var(--t3)",fontSize:10,fontWeight:600,fontFamily:"'DM Mono',monospace"}}>{d}%</button>
+ ))}
+ </div>
+ )}
+ <div style={{padding:"11px 13px",borderTop:"1px solid var(--border)",flexShrink:0}}>
+ {discount>0&&<div style={{display:"flex",justifyContent:"space-between",marginBottom:6,padding:"4px 8px",background:"var(--amber-g)",borderRadius:5}}><span style={{fontSize:10,color:"var(--t2)"}}>Desc. {discount}%</span><span style={{fontFamily:"'DM Mono',monospace",fontSize:10,color:"var(--amber)"}}>-{fmt(discAmt)}</span></div>}
+ <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+ <span style={{fontSize:12,color:"var(--t2)"}}>TOTAL</span>
+ <span style={{fontFamily:"'DM Mono',monospace",fontSize:20,fontWeight:800,color:"var(--amber)"}}>{fmt(total)}</span>
+ </div>
+ <Btn v="success" sz="lg" full disabled={activeOrder.items.length===0} onClick={()=>setShowCM(true)} icon="">Cobrar {fmt(total)}</Btn>
+ </div>
+ </>
+ )}
+ </div>
+
+ {showVM&&<VariantModal product={showVM} onClose={()=>setShowVM(null)} onConfirm={v=>{dispatch({type:"ADD_ITEM",item:{productId:showVM.id,name:showVM.name,price:showVM.price+(v.extra||0),variant:v.name,variantLabel:v.name}});}}/>}
+ {showNOM&&<NewOrderModal onClose={()=>setShowNOM(false)} onConfirm={(ot,table)=>dispatch({type:"NEW_ORDER",table,ot})}/>}
+ {showCM&&activeOrder&&<ChargeModal order={activeOrder} subtotal={subtotal} discount={discount} total={total} onClose={()=>setShowCM(false)} onCharge={handleCharge}/>}
+ {showTicket&&lastOrder&&<TicketModal order={lastOrder} company={state.company} onClose={()=>setShowTicket(false)}/>}
+ </div>;
+};
+
+
+// ═══ INVENTARIO ═══
+const NewProductModal=({onClose})=>{
+  const {dispatch}=useStore();
+  const [form,setForm]=useState({name:"",cat:"proteina",price:"",stock:"10",sku:"",image:""});
+  const set=(k,v)=>setForm(p=>({...p,[k]:v}));
+  const valid=form.name&&form.price&&parseFloat(form.price)>0;
+  const ls={fontSize:10,color:"var(--t3)",fontFamily:"monospace",letterSpacing:".08em",textTransform:"uppercase",fontWeight:600,display:"block",marginBottom:5};
+  const is={width:"100%",padding:"10px 14px",minHeight:42,background:"var(--el)",border:"1px solid var(--border)",borderRadius:9,color:"var(--t1)",fontSize:13,outline:"none"};
+  const handleImg=e=>{
+    const f=e.target.files[0];if(!f)return;
+    if(f.size>400000){alert("Imagen max 400KB");return;}
+    const r=new FileReader();
+    r.onload=ev=>set("image",ev.target.result);
+    r.readAsDataURL(f);
+  };
+  return <Modal onClose={onClose} title="Nuevo Producto" maxW={420}>
+    <div style={{padding:18,display:"flex",flexDirection:"column",gap:12}}>
+      <div style={{display:"flex",alignItems:"center",gap:12,padding:"12px",background:"var(--el)",border:"1px solid var(--border)",borderRadius:10}}>
+        <div style={{width:64,height:64,borderRadius:10,background:"var(--surface)",border:"2px dashed var(--border)",display:"flex",alignItems:"center",justifyContent:"center",overflow:"hidden",flexShrink:0}}>
+          {form.image
+            ?<img src={form.image} style={{width:"100%",height:"100%",objectFit:"cover"}} alt="prod"/>
+            :<span style={{fontSize:10,color:"var(--t3)",textAlign:"center",padding:4,lineHeight:1.4}}>Sin imagen</span>}
+        </div>
+        <div>
+          <label style={{display:"inline-flex",alignItems:"center",gap:6,padding:"7px 12px",background:"var(--surface)",border:"1px solid var(--border)",borderRadius:8,cursor:"pointer",fontSize:11,fontWeight:600,color:"var(--t2)",transition:"all .13s"}}
+            onMouseEnter={e=>{e.currentTarget.style.borderColor="var(--amber)";e.currentTarget.style.color="var(--amber)";}}
+            onMouseLeave={e=>{e.currentTarget.style.borderColor="var(--border)";e.currentTarget.style.color="var(--t2)";}}>
+            Subir imagen
+            <input type="file" accept="image/*" onChange={handleImg} style={{display:"none"}}/>
+          </label>
+          {form.image&&<button onClick={()=>set("image","")} style={{marginLeft:8,padding:"6px 10px",background:"var(--red-g)",border:"1px solid rgba(255,77,77,.2)",borderRadius:7,cursor:"pointer",fontSize:11,color:"var(--red)"}}>Quitar</button>}
+          <div style={{fontSize:10,color:"var(--t3)",marginTop:4}}>PNG / JPG - max 400KB</div>
+        </div>
+      </div>
+      <div><label style={ls}>Nombre del producto *</label><input value={form.name} onChange={e=>set("name",e.target.value)} placeholder="Ej: Pechuga Grillada" style={is} onFocus={e=>e.target.style.borderColor="var(--amber)"} onBlur={e=>e.target.style.borderColor="var(--border)"}/></div>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+        <div><label style={ls}>Categoria</label>
+          <select value={form.cat} onChange={e=>set("cat",e.target.value)} style={{...is}}>
+            {CATS.filter(c=>c.id!=="all").map(c=><option key={c.id} value={c.id}>{c.label}</option>)}
+          </select>
+        </div>
+        <div><label style={ls}>Precio *</label>
+          <div style={{position:"relative"}}>
+            <span style={{position:"absolute",left:11,top:"50%",transform:"translateY(-50%)",color:"var(--t3)",fontSize:13,pointerEvents:"none"}}>$</span>
+            <input type="number" step="0.01" value={form.price} onChange={e=>set("price",e.target.value)} placeholder="0.00" style={{...is,paddingLeft:26}} onFocus={e=>e.target.style.borderColor="var(--amber)"} onBlur={e=>e.target.style.borderColor="var(--border)"}/>
+          </div>
+        </div>
+      </div>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+        <div><label style={ls}>Stock inicial</label><input type="number" value={form.stock} onChange={e=>set("stock",e.target.value)} placeholder="10" style={is} onFocus={e=>e.target.style.borderColor="var(--amber)"} onBlur={e=>e.target.style.borderColor="var(--border)"}/></div>
+        <div><label style={ls}>SKU / Codigo</label><input value={form.sku} onChange={e=>set("sku",e.target.value)} placeholder="PRO-004" style={is} onFocus={e=>e.target.style.borderColor="var(--amber)"} onBlur={e=>e.target.style.borderColor="var(--border)"}/></div>
+      </div>
+      {valid&&<div style={{padding:"8px 12px",background:"var(--green-g)",border:"1px solid rgba(61,220,132,.25)",borderRadius:8,fontSize:11,color:"var(--green)"}}>Listo: {form.name} - {fmt(parseFloat(form.price))}</div>}
+    </div>
+    <div style={{padding:"12px 18px",borderTop:"1px solid var(--border)",display:"flex",gap:8,justifyContent:"flex-end"}}>
+      <Btn v="ghost" onClick={onClose}>Cancelar</Btn>
+      <Btn v="primary" disabled={!valid} onClick={()=>{
+        const id="p"+Date.now();
+        const sku=form.sku||(form.cat.slice(0,3).toUpperCase()+"-"+id.slice(-4));
+        dispatch({type:"SAVE_PRODUCT",p:{id,name:form.name,cat:form.cat,price:parseFloat(form.price),cost:0,stock:parseInt(form.stock)||0,minStock:5,sku,variants:[],image:form.image||""}});
+        onClose();
+      }}>Guardar</Btn>
+    </div>
+  </Modal>;
+};
+
+const StockModal=({product,onClose})=>{
+ const {dispatch}=useStore();
+ const [type,setType]=useState("add");
+ const [qty,setQty]=useState("");
+ const prev=type==="add"?product.stock+(parseInt(qty)||0):product.stock-(parseInt(qty)||0);
+ return <Modal onClose={onClose} title="Ajuste de Stock" subtitle={product.name} maxW={300}>
+ <div style={{padding:16,display:"flex",flexDirection:"column",gap:10}}>
+ <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+ {[["add"," Entrada"],["remove"," Salida"]].map(([id,lb])=>(
+ <button key={id} onClick={()=>setType(id)} style={{padding:"9px",borderRadius:8,cursor:"pointer",background:type===id?(id==="add"?"var(--green-g)":"var(--red-g)"):"var(--el)",border:`1px solid ${type===id?(id==="add"?"rgba(61,220,132,.3)":"rgba(255,77,77,.3)"):"var(--border)"}`,color:type===id?(id==="add"?"var(--green)":"var(--red)"):"var(--t2)",fontSize:11,fontWeight:600}}>{lb}</button>
+ ))}
+ </div>
+ <input type="number" min="1" value={qty} onChange={e=>setQty(e.target.value)} placeholder="Cantidad"
+ style={{width:"100%",padding:"10px",textAlign:"center",background:"var(--el)",border:"1px solid var(--border)",borderRadius:8,color:"var(--t1)",fontSize:20,fontFamily:"'DM Mono',monospace",outline:"none"}}
+ onFocus={e=>e.target.style.borderColor="var(--amber)"} onBlur={e=>e.target.style.borderColor="var(--border)"}/>
+ {qty&&<div style={{display:"flex",justifyContent:"space-between",padding:"8px 12px",background:"var(--el)",border:"1px solid var(--border)",borderRadius:8}}>
+ <div><div style={{fontSize:9,color:"var(--t3)",fontFamily:"'DM Mono',monospace",textTransform:"uppercase"}}>RESULTADO</div><div style={{fontSize:18,fontWeight:700,fontFamily:"'DM Mono',monospace",color:Math.max(0,prev)<=product.minStock?"var(--amber)":"var(--green)"}}>{Math.max(0,prev)}</div></div>
+ <div style={{textAlign:"right"}}><div style={{fontSize:9,color:"var(--t3)",fontFamily:"'DM Mono',monospace",textTransform:"uppercase"}}>ANTES</div><div style={{fontSize:14,fontFamily:"'DM Mono',monospace",color:"var(--t2)"}}>{product.stock}</div></div>
+ </div>}
+ </div>
+ <div style={{padding:"11px 16px",borderTop:"1px solid var(--border)",display:"flex",gap:8,justifyContent:"flex-end"}}>
+ <Btn v="ghost" onClick={onClose}>Cancelar</Btn>
+ <Btn v={type==="add"?"success":"danger"} disabled={!qty||parseInt(qty)<=0} onClick={()=>{dispatch({type:"ADJUST_STOCK",id:product.id,delta:type==="add"?parseInt(qty):-parseInt(qty)});onClose();}}>Confirmar</Btn>
+ </div>
+ </Modal>;
+};
+
+const InventoryModule=()=>{
+ const {state}=useStore();
+ const {products}=state;
+ const [cat,setCat]=useState("all");const [search,setSearch]=useState("");
+ const [showNew,setShowNew]=useState(false);const [stockProd,setStockProd]=useState(null);
+ const filtered=useMemo(()=>{let l=[...products];if(cat!=="all")l=l.filter(p=>p.cat===cat);if(search){const q=search.toLowerCase();l=l.filter(p=>p.name.toLowerCase().includes(q)||p.sku.toLowerCase().includes(q));}return l.sort((a,b)=>a.stock-b.stock);},[products,cat,search]);
+ const stats=useMemo(()=>({total:products.length,low:products.filter(p=>p.stock>0&&p.stock<=p.minStock).length,out:products.filter(p=>p.stock===0).length,value:products.reduce((s,p)=>s+p.cost*p.stock,0)}),[products]);
+ const si=(stock,min)=>stock===0?{label:"Agotado",v:"danger",color:"var(--red)"}:stock<=min?{label:"Bajo",v:"warning",color:"var(--amber)"}:{label:"OK",v:"success",color:"var(--green)"};
+ return <div style={{height:"100%",display:"flex",flexDirection:"column",overflow:"hidden"}}>
+ <div style={{padding:"14px 18px 0",flexShrink:0}}>
+ <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+ <div><h2 style={{fontSize:18,fontWeight:800}}>Inventario</h2><p style={{fontSize:11,color:"var(--t2)",marginTop:1}}>Valor: <span style={{color:"var(--amber)",fontFamily:"'DM Mono',monospace"}}>{fmt(stats.value)}</span></p></div>
+ <Btn v="primary" icon="+" sz="sm" onClick={()=>setShowNew(true)}>Nuevo</Btn>
+ </div>
+ <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,marginBottom:10}}>
+ {[["Total",stats.total,"var(--t1)"],["Stock bajo",stats.low,"var(--amber)"],["Agotados",stats.out,"var(--red)"]].map(([l,v,c],i)=>(
+ <div key={i} style={{padding:"10px 12px",background:"var(--surface)",border:"1px solid var(--border)",borderRadius:9}}><div style={{fontSize:9,color:"var(--t3)",fontFamily:"'DM Mono',monospace",textTransform:"uppercase",marginBottom:3}}>{l}</div><div style={{fontSize:20,fontWeight:800,fontFamily:"'DM Mono',monospace",color:c}}>{v}</div></div>
+ ))}
+ </div>
+ <div style={{display:"flex",gap:5,overflowX:"auto",flexWrap:"nowrap",marginBottom:8}}>
+ {CATS.map(c=><button key={c.id} onClick={()=>setCat(c.id)} style={{display:"flex",alignItems:"center",gap:4,padding:"5px 10px",borderRadius:20,cursor:"pointer",flexShrink:0,background:cat===c.id?"var(--amber-g)":"var(--el)",border:`1px solid ${cat===c.id?"rgba(245,166,35,.3)":"var(--border)"}`,color:cat===c.id?"var(--amber)":"var(--t2)",fontSize:11,fontWeight:600}}>{c.icon} {c.label}</button>)}
+ </div>
+ <div style={{position:"relative",marginBottom:10}}>
+ <span style={{position:"absolute",left:11,top:"50%",transform:"translateY(-50%)",color:"var(--t3)",fontSize:14,pointerEvents:"none"}}></span>
+ <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Buscar producto o SKU..."
+ style={{width:"100%",padding:"8px 12px 8px 34px",minHeight:38,background:"var(--el)",border:"1px solid var(--border)",borderRadius:9,color:"var(--t1)",fontSize:12,outline:"none"}}
+ onFocus={e=>e.target.style.borderColor="var(--amber)"} onBlur={e=>e.target.style.borderColor="var(--border)"}/>
+ </div>
+ </div>
+ <div style={{flex:1,overflowY:"auto",margin:"0 18px 18px",background:"var(--surface)",border:"1px solid var(--border)",borderRadius:12,overflow:"hidden"}}>
+ {filtered.map((p,i)=>{const s=si(p.stock,p.minStock);const ct=CATS.find(c=>c.id===p.cat);const mg=mpct(p.price,p.cost);return(
+ <div key={p.id} className="fu" style={{display:"flex",alignItems:"center",gap:10,padding:"11px 14px",borderBottom:"1px solid var(--border)",animationDelay:`${i*.02}s`,animationFillMode:"both"}}
+ onMouseEnter={e=>e.currentTarget.style.background="var(--el)"} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
+ <div style={{width:34,height:34,borderRadius:8,flexShrink:0,background:"var(--el)",border:"1px solid var(--border)",display:"flex",alignItems:"center",justifyContent:"center",overflow:"hidden"}}>
+                {p.image?<img src={p.image} style={{width:"100%",height:"100%",objectFit:"cover"}} alt={p.name}/>:<span style={{fontSize:15,color:ct?.color||"var(--t3)"}}>{ct?.icon}</span>}
+              </div>
+ <div style={{flex:1,minWidth:0}}><div style={{fontSize:12,fontWeight:600,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.name}</div><div style={{fontSize:9,color:"var(--t3)",fontFamily:"'DM Mono',monospace"}}>{p.sku} · {ct?.label}{mg>0?` · ${mg}% mg`:""}</div></div>
+ <div style={{textAlign:"right",marginRight:4,flexShrink:0}}><div style={{fontSize:13,fontWeight:700,fontFamily:"'DM Mono',monospace",color:"var(--amber)"}}>{fmt(p.price)}</div></div>
+ <div style={{flexShrink:0}}>
+ <div style={{display:"flex",alignItems:"center",gap:5}}>
+ <div style={{width:44,height:4,background:"var(--border)",borderRadius:2,overflow:"hidden"}}><div style={{width:`${Math.min((p.stock/(p.minStock*4||20))*100,100)}%`,height:"100%",background:s.color,borderRadius:2}}/></div>
+ <span style={{fontSize:11,fontFamily:"'DM Mono',monospace",color:s.color,minWidth:20}}>{p.stock}</span>
+ </div>
+ <div style={{marginTop:3}}><Badge variant={s.v}>{s.label}</Badge></div>
+ </div>
+ <button onClick={()=>setStockProd(p)} style={{width:26,height:26,borderRadius:6,background:"var(--amber-g)",border:"1px solid rgba(245,166,35,.2)",color:"var(--amber)",cursor:"pointer",fontSize:12,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>±</button>
+ </div>
+ );})}
+ {filtered.length===0&&<div style={{padding:"40px 20px",textAlign:"center",color:"var(--t3)"}}><div style={{fontSize:32,marginBottom:8}}></div><div style={{fontSize:11,fontFamily:"'DM Mono',monospace"}}>Sin productos</div></div>}
+ </div>
+ {showNew&&<NewProductModal onClose={()=>setShowNew(false)}/>}
+ {stockProd&&<StockModal product={stockProd} onClose={()=>setStockProd(null)}/>}
+ </div>;
+};
+
+
+// ═══ CRÉDITOS ═══
+const NewClientModal=({onClose})=>{
+ const {dispatch}=useStore();
+ const [form,setForm]=useState({name:"",contact:"",phone:"",creditLimit:"500"});
+ const set=(k,v)=>setForm(p=>({...p,[k]:v}));
+ const ls={fontSize:10,color:"var(--t3)",fontFamily:"'DM Mono',monospace",letterSpacing:".08em",textTransform:"uppercase",fontWeight:600,display:"block",marginBottom:5};
+ const is={width:"100%",padding:"10px 14px",minHeight:42,background:"var(--el)",border:"1px solid var(--border)",borderRadius:9,color:"var(--t1)",fontSize:13,outline:"none"};
+ return <Modal onClose={onClose} title="Nuevo Cliente" maxW={400}>
+ <div style={{padding:18,display:"flex",flexDirection:"column",gap:12}}>
+ <div><label style={ls}>Nombre / Empresa *</label><input value={form.name} onChange={e=>set("name",e.target.value)} placeholder="Restaurante El Mar" style={is} onFocus={e=>e.target.style.borderColor="var(--amber)"} onBlur={e=>e.target.style.borderColor="var(--border)"}/></div>
+ <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+ <div><label style={ls}>Contacto *</label><input value={form.contact} onChange={e=>set("contact",e.target.value)} placeholder="Responsable" style={is} onFocus={e=>e.target.style.borderColor="var(--amber)"} onBlur={e=>e.target.style.borderColor="var(--border)"}/></div>
+ <div><label style={ls}>Teléfono</label><input value={form.phone} onChange={e=>set("phone",e.target.value)} placeholder="555-0000" style={is} onFocus={e=>e.target.style.borderColor="var(--amber)"} onBlur={e=>e.target.style.borderColor="var(--border)"}/></div>
+ </div>
+ <div><label style={ls}>Límite de crédito</label>
+ <div style={{position:"relative"}}><span style={{position:"absolute",left:11,top:"50%",transform:"translateY(-50%)",color:"var(--t3)",fontFamily:"'DM Mono',monospace",fontSize:13,pointerEvents:"none"}}>$</span>
+ <input type="number" value={form.creditLimit} onChange={e=>set("creditLimit",e.target.value)} style={{...is,paddingLeft:26}} onFocus={e=>e.target.style.borderColor="var(--amber)"} onBlur={e=>e.target.style.borderColor="var(--border)"}/>
+ </div>
+ </div>
+ </div>
+ <div style={{padding:"12px 18px",borderTop:"1px solid var(--border)",display:"flex",gap:8,justifyContent:"flex-end"}}>
+ <Btn v="ghost" onClick={onClose}>Cancelar</Btn>
+ <Btn v="primary" disabled={!form.name||!form.contact} onClick={()=>{dispatch({type:"ADD_CLIENT",p:{...form,id:`c${Date.now()}`,creditLimit:parseFloat(form.creditLimit)||500,balance:0,status:"active",riskLevel:"low",transactions:[],createdAt:new Date().toISOString()}});onClose();}}>Crear</Btn>
+ </div>
+ </Modal>;
+};
+
+const TxModal=({client,txType,onClose})=>{
+ const {dispatch}=useStore();
+ const [amount,setAmount]=useState("");
+ const [note,setNote]=useState("");
+ const isChrg=txType==="charge";
+ const amt=parseFloat(amount)||0;
+ const newBal=isChrg?client.balance+amt:Math.max(0,client.balance-amt);
+ const over=isChrg&&newBal>client.creditLimit;
+ return <Modal onClose={onClose} title="Registrar Transacción" subtitle={client.name} maxW={360}>
+ <div style={{padding:16,display:"flex",flexDirection:"column",gap:12}}>
+ <div style={{padding:"9px 12px",background:isChrg?"var(--amber-g)":"var(--green-g)",border:`1px solid ${isChrg?"rgba(245,166,35,.3)":"rgba(61,220,132,.3)"}`,borderRadius:8,display:"flex",alignItems:"center",gap:8}}>
+ <span style={{fontSize:18}}>{isChrg?"":""}</span>
+ <div><div style={{fontSize:12,fontWeight:700,color:isChrg?"var(--amber)":"var(--green)"}}>{isChrg?"Registrar cargo":"Registrar pago"}</div><div style={{fontSize:10,color:"var(--t2)",fontFamily:"'DM Mono',monospace"}}>Saldo actual: {fmt(client.balance)}</div></div>
+ </div>
+ <FInput label="Monto *" value={amount} type="number" prefix="$" onChange={e=>setAmount(e.target.value)} placeholder="0.00"/>
+ {over&&<div style={{padding:"7px 11px",background:"var(--red-g)",border:"1px solid rgba(255,77,77,.3)",borderRadius:7,fontSize:11,color:"var(--red)"}}> Excede el límite de crédito</div>}
+ {amt>0&&!over&&<div style={{display:"flex",justifyContent:"space-between",padding:"7px 11px",background:"var(--el)",border:"1px solid var(--border)",borderRadius:7}}>
+ <span style={{fontSize:11,color:"var(--t2)"}}>Nuevo saldo</span>
+ <span style={{fontFamily:"'DM Mono',monospace",fontSize:13,fontWeight:700,color:isChrg?"var(--amber)":"var(--green)"}}>{fmt(newBal)}</span>
+ </div>}
+ <FInput label="Nota" value={note} onChange={e=>setNote(e.target.value)} placeholder="Descripción..."/>
+ </div>
+ <div style={{padding:"11px 16px",borderTop:"1px solid var(--border)",display:"flex",gap:8,justifyContent:"flex-end"}}>
+ <Btn v="ghost" onClick={onClose}>Cancelar</Btn>
+ <Btn v={isChrg?"amber":"success"} disabled={!amount||amt<=0||over} onClick={()=>{dispatch({type:"ADD_CREDIT_TX",cid:client.id,tx:{type:txType,amount:amt,note,ref:`REF-${Date.now().toString().slice(-5)}`}});onClose();}}>Confirmar</Btn>
+ </div>
+ </Modal>;
+};
+
+const ClientDetail=({client,onClose})=>{
+ const [showTx,setShowTx]=useState(null);
+ const riskCfg={low:{c:"var(--green)",bg:"var(--green-g)"},medium:{c:"var(--amber)",bg:"var(--amber-g)"},high:{c:"#FF8C42",bg:"var(--orange-g)"},critical:{c:"var(--red)",bg:"var(--red-g)"}};
+ const r=riskCfg[client.riskLevel]||riskCfg.low;
+ const used=client.creditLimit>0?Math.round((client.balance/client.creditLimit)*100):0;
+ return <div className="si" style={{width:300,background:"var(--surface)",borderLeft:"1px solid var(--border)",display:"flex",flexDirection:"column",flexShrink:0,overflow:"hidden"}}>
+ <div style={{padding:"14px 16px",borderBottom:"1px solid var(--border)"}}>
+ <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10}}>
+ <div><div style={{fontSize:13,fontWeight:800}}>{client.name}</div><div style={{fontSize:11,color:"var(--t2)",marginTop:1}}>{client.contact} · {client.phone}</div></div>
+ <button onClick={onClose} style={{width:24,height:24,borderRadius:6,background:"var(--el)",border:"1px solid var(--border)",color:"var(--t2)",cursor:"pointer",fontSize:13,display:"flex",alignItems:"center",justifyContent:"center"}}>×</button>
+ </div>
+ <div style={{padding:"10px 12px",background:"var(--el)",border:"1px solid var(--border)",borderRadius:9,marginBottom:8}}>
+ <div style={{display:"flex",justifyContent:"space-between",marginBottom:8}}>
+ <div><div style={{fontSize:9,color:"var(--t3)",fontFamily:"'DM Mono',monospace",textTransform:"uppercase",marginBottom:2}}>Saldo</div><div style={{fontSize:22,fontWeight:800,fontFamily:"'DM Mono',monospace",color:client.balance>0?"var(--red)":"var(--green)"}}>{fmt(client.balance)}</div></div>
+ <div style={{textAlign:"right"}}><div style={{fontSize:9,color:"var(--t3)",fontFamily:"'DM Mono',monospace",textTransform:"uppercase",marginBottom:2}}>Límite</div><div style={{fontSize:15,fontFamily:"'DM Mono',monospace",color:"var(--t2)",fontWeight:700}}>{fmt(client.creditLimit)}</div></div>
+ </div>
+ <div style={{height:4,background:"var(--border)",borderRadius:2,overflow:"hidden"}}><div style={{width:`${used}%`,height:"100%",background:r.c,borderRadius:2,transition:"width .4s"}}/></div>
+ <div style={{marginTop:4,display:"flex",justifyContent:"space-between"}}>
+ <span style={{fontSize:9,color:r.c,fontFamily:"'DM Mono',monospace"}}>{used}% usado</span>
+ <span style={{fontSize:9,color:"var(--t3)",fontFamily:"'DM Mono',monospace"}}>Disponible: {fmt(Math.max(0,client.creditLimit-client.balance))}</span>
+ </div>
+ </div>
+ <div style={{display:"flex",gap:6}}>
+ <Btn v="amber" sz="sm" style={{flex:1}} icon="" disabled={client.status==="suspended"} onClick={()=>setShowTx("charge")}>Cargo</Btn>
+ <Btn v="success" sz="sm" style={{flex:1}} icon="" disabled={client.balance===0} onClick={()=>setShowTx("payment")}>Pago</Btn>
+ </div>
+ </div>
+ <div style={{flex:1,overflowY:"auto"}}>
+ {client.transactions.length===0
+ ?<div style={{padding:"24px 14px",textAlign:"center",color:"var(--t3)",fontSize:11,fontFamily:"'DM Mono',monospace"}}>Sin movimientos</div>
+ :client.transactions.slice().reverse().map((tx,i)=>(
+ <div key={tx.id||i} style={{display:"flex",alignItems:"center",gap:9,padding:"9px 14px",borderBottom:"1px solid var(--border)"}}
+ onMouseEnter={e=>e.currentTarget.style.background="var(--el)"} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
+ <div style={{width:26,height:26,borderRadius:7,flexShrink:0,background:tx.type==="charge"?"var(--amber-g)":"var(--green-g)",border:`1px solid ${tx.type==="charge"?"rgba(245,166,35,.25)":"rgba(61,220,132,.25)"}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12}}>{tx.type==="charge"?"":""}</div>
+ <div style={{flex:1,minWidth:0}}><div style={{fontSize:11,fontWeight:600}}>{tx.note||tx.ref||tx.type}</div><div style={{fontSize:9,color:"var(--t3)",fontFamily:"'DM Mono',monospace",marginTop:1}}>{tx.date?new Date(tx.date).toLocaleDateString("es",{day:"numeric",month:"short"}):"—"}</div></div>
+ <div style={{textAlign:"right",flexShrink:0}}><div style={{fontFamily:"'DM Mono',monospace",fontSize:11,fontWeight:700,color:tx.type==="charge"?"var(--amber)":"var(--green)"}}>{tx.type==="charge"?"+":"-"}{fmt(tx.amount)}</div></div>
+ </div>
+ ))
+ }
+ </div>
+ {showTx&&<TxModal client={client} txType={showTx} onClose={()=>setShowTx(null)}/>}
+ </div>;
+};
+
+const CreditsModule=()=>{
+ const {state}=useStore();
+ const {clients}=state;
+ const [selected,setSelected]=useState(null);
+ const [search,setSearch]=useState("");
+ const [showNew,setShowNew]=useState(false);
+ const riskCfg={low:{c:"var(--green)",bg:"var(--green-g)"},medium:{c:"var(--amber)",bg:"var(--amber-g)"},high:{c:"#FF8C42",bg:"var(--orange-g)"},critical:{c:"var(--red)",bg:"var(--red-g)"}};
+ const filtered=useMemo(()=>{let l=[...clients];if(search){const q=search.toLowerCase();l=l.filter(c=>c.name.toLowerCase().includes(q)||c.contact.toLowerCase().includes(q));}return l.sort((a,b)=>b.balance-a.balance);},[clients,search]);
+ const totalDebt=clients.reduce((s,c)=>s+c.balance,0);
+ const selClient=selected?clients.find(c=>c.id===selected):null;
+ return <div style={{height:"100%",display:"flex",flexDirection:"column",overflow:"hidden"}}>
+ <div style={{padding:"14px 18px 10px",borderBottom:"1px solid var(--border)",flexShrink:0}}>
+ <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+ <div><h2 style={{fontSize:18,fontWeight:800}}>Créditos</h2><p style={{fontSize:11,color:"var(--t2)",marginTop:1}}>Cartera: <span style={{color:"var(--amber)",fontFamily:"'DM Mono',monospace"}}>{fmt(totalDebt)}</span></p></div>
+ <Btn v="primary" icon="+" sz="sm" onClick={()=>setShowNew(true)}>Nuevo</Btn>
+ </div>
+ <div style={{position:"relative"}}>
+ <span style={{position:"absolute",left:11,top:"50%",transform:"translateY(-50%)",color:"var(--t3)",fontSize:14,pointerEvents:"none"}}></span>
+ <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Buscar cliente..."
+ style={{width:"100%",padding:"8px 12px 8px 34px",minHeight:36,background:"var(--el)",border:"1px solid var(--border)",borderRadius:9,color:"var(--t1)",fontSize:12,outline:"none"}}
+ onFocus={e=>e.target.style.borderColor="var(--amber)"} onBlur={e=>e.target.style.borderColor="var(--border)"}/>
+ </div>
+ </div>
+ <div style={{flex:1,display:"flex",overflow:"hidden"}}>
+ <div style={{flex:1,overflowY:"auto",padding:12,display:"flex",flexDirection:"column",gap:8}}>
+ {filtered.map((c,i)=>{const r=riskCfg[c.riskLevel]||riskCfg.low;const used=c.creditLimit>0?Math.round((c.balance/c.creditLimit)*100):0;return(
+ <div key={c.id} className="fu" onClick={()=>setSelected(selected===c.id?null:c.id)}
+ style={{padding:"13px 14px",background:selected===c.id?"var(--amber-g)":"var(--surface)",border:`1px solid ${selected===c.id?"rgba(245,166,35,.3)":"var(--border)"}`,borderRadius:11,cursor:"pointer",transition:"all .14s",animationDelay:`${i*.04}s`,animationFillMode:"both"}}
+ onMouseEnter={e=>{if(selected!==c.id){e.currentTarget.style.background="var(--el)";e.currentTarget.style.borderColor="var(--amber)";}}}
+ onMouseLeave={e=>{if(selected!==c.id){e.currentTarget.style.background="var(--surface)";e.currentTarget.style.borderColor="var(--border)";}}}>
+ <div style={{display:"flex",justifyContent:"space-between",marginBottom:7}}>
+ <div style={{flex:1,minWidth:0}}><div style={{fontSize:13,fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",color:selected===c.id?"var(--amber)":"var(--t1)"}}>{c.name}</div><div style={{fontSize:11,color:"var(--t2)",marginTop:1}}>{c.contact}</div></div>
+ <span style={{padding:"2px 7px",borderRadius:5,background:r.bg,color:r.c,fontSize:9,fontWeight:600,letterSpacing:".05em",textTransform:"uppercase",fontFamily:"'DM Mono',monospace",marginLeft:8,flexShrink:0,alignSelf:"flex-start"}}>{c.riskLevel}</span>
+ </div>
+ <div style={{height:4,background:"var(--border)",borderRadius:2,overflow:"hidden",marginBottom:6}}><div style={{width:`${used}%`,height:"100%",background:r.c,borderRadius:2}}/></div>
+ <div style={{display:"flex",justifyContent:"space-between"}}>
+ <div><div style={{fontSize:9,color:"var(--t3)",fontFamily:"'DM Mono',monospace",textTransform:"uppercase",marginBottom:1}}>Saldo</div><div style={{fontSize:14,fontWeight:800,fontFamily:"'DM Mono',monospace",color:c.balance===0?"var(--green)":c.balance>=c.creditLimit?"var(--red)":"var(--amber)"}}>{fmt(c.balance)}</div></div>
+ <div style={{textAlign:"right"}}><div style={{fontSize:9,color:"var(--t3)",fontFamily:"'DM Mono',monospace",textTransform:"uppercase",marginBottom:1}}>Disponible</div><div style={{fontSize:12,fontWeight:600,fontFamily:"'DM Mono',monospace",color:"var(--t2)"}}>{fmt(Math.max(0,c.creditLimit-c.balance))}</div></div>
+ </div>
+ </div>
+ );})}
+ </div>
+ {selClient&&<ClientDetail client={selClient} onClose={()=>setSelected(null)}/>}
+ </div>
+ {showNew&&<NewClientModal onClose={()=>setShowNew(false)}/>}
+ </div>;
+};
+
+
+// ═══ REPORTES ═══
+const ReportsModule=()=>{
+ const {state}=useStore();
+ const {orders,products}=state;
+ const metrics=useMemo(()=>{
+ const revenue=orders.reduce((s,o)=>s+o.totalPaid,0);
+ const cost=orders.reduce((s,o)=>s+o.items.reduce((is,i)=>{const p=products.find(p=>p.id===i.productId);return is+(p?p.cost*i.qty:0);},0),0);
+ const profit=revenue-cost;const margin=revenue>0?(profit/revenue)*100:0;
+ const byMethod={efectivo:0,tarjeta:0,transferencia:0};
+ orders.forEach(o=>{if(byMethod[o.paymentMethod]!==undefined)byMethod[o.paymentMethod]+=o.totalPaid;});
+ const tp={};orders.forEach(o=>o.items.forEach(i=>{if(!tp[i.name])tp[i.name]={name:i.name,revenue:0,qty:0};tp[i.name].revenue+=i.price*i.qty;tp[i.name].qty+=i.qty;}));
+ return{revenue,cost,profit,margin,byMethod,count:orders.length,avgTicket:orders.length>0?revenue/orders.length:0,topProducts:Object.values(tp).sort((a,b)=>b.revenue-a.revenue).slice(0,5)};
+ },[orders,products]);
+
+ if(orders.length===0) return <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:14,opacity:.4,padding:40}}>
+ <div style={{fontSize:48}}></div>
+ <div style={{fontFamily:"'DM Mono',monospace",fontSize:12,color:"var(--t3)",textAlign:"center"}}>Sin ventas aún.<br/>Completa órdenes en el POS para ver reportes.</div>
+ </div>;
+
+ return <div style={{padding:16,display:"flex",flexDirection:"column",gap:14,overflowY:"auto",height:"100%"}}>
+ <h2 style={{fontSize:18,fontWeight:800}}>Reportes del Turno</h2>
+ <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(130px,1fr))",gap:9}}>
+ {[["Ingresos",fmt(metrics.revenue),"","var(--amber)"],["Costo",fmt(metrics.cost),"","var(--red)"],["Ganancia",fmt(metrics.profit),"","var(--green)"],["Margen",`${metrics.margin.toFixed(1)}%`,"%",metrics.margin>=60?"var(--green)":metrics.margin>=40?"var(--amber)":"var(--red)"],["Órdenes",metrics.count,"","var(--blue)"],["Ticket prom.",fmt(metrics.avgTicket),"","var(--purple)"]].map(([l,v,ic,c],i)=>(
+ <div key={i} className="fu" style={{padding:"12px 14px",background:"var(--surface)",border:"1px solid var(--border)",borderRadius:11,animationDelay:`${i*.04}s`,animationFillMode:"both"}}>
+ <div style={{fontSize:9,color:"var(--t3)",fontFamily:"'DM Mono',monospace",letterSpacing:".08em",textTransform:"uppercase",marginBottom:5}}>{l}</div>
+ <div style={{fontSize:20,fontWeight:800,fontFamily:"'DM Mono',monospace",color:c}}>{v}</div>
+ </div>
+ ))}
+ </div>
+ <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+ <div style={{background:"var(--surface)",border:"1px solid var(--border)",borderRadius:12,padding:"14px 16px"}}>
+ <div style={{fontSize:12,fontWeight:700,marginBottom:10}}>Métodos de Pago</div>
+ {Object.entries(metrics.byMethod).map(([m,v],i)=>{const t=metrics.revenue||1;return(
+ <div key={i} style={{marginBottom:9}}>
+ <div style={{display:"flex",justifyContent:"space-between",marginBottom:3}}><span style={{fontSize:11,color:"var(--t2)",textTransform:"capitalize"}}>{m}</span><span style={{fontFamily:"'DM Mono',monospace",fontSize:11,fontWeight:700,color:["var(--green)","var(--blue)","var(--purple)"][i]}}>{fmt(v)}</span></div>
+ <div style={{height:4,background:"var(--border)",borderRadius:2,overflow:"hidden"}}><div style={{width:`${(v/t)*100}%`,height:"100%",background:["var(--green)","var(--blue)","var(--purple)"][i],borderRadius:2}}/></div>
+ </div>
+ );})}
+ </div>
+ <div style={{background:"var(--surface)",border:"1px solid var(--border)",borderRadius:12,padding:"14px 16px"}}>
+ <div style={{fontSize:12,fontWeight:700,marginBottom:10}}>Top Productos</div>
+ {metrics.topProducts.length===0?<div style={{fontSize:11,color:"var(--t3)",fontFamily:"'DM Mono',monospace"}}>Sin datos</div>
+ :metrics.topProducts.map((p,i)=>(
+ <div key={i} style={{marginBottom:7}}>
+ <div style={{display:"flex",justifyContent:"space-between",marginBottom:2}}><span style={{fontSize:11,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",flex:1,marginRight:6}}>{p.name}</span><span style={{fontFamily:"'DM Mono',monospace",fontSize:11,fontWeight:700,color:"var(--amber)",flexShrink:0}}>{fmt(p.revenue)}</span></div>
+ <div style={{height:3,background:"var(--border)",borderRadius:2,overflow:"hidden"}}><div style={{width:`${(p.revenue/(metrics.topProducts[0]?.revenue||1))*100}%`,height:"100%",background:"var(--amber)",borderRadius:2}}/></div>
+ </div>
+ ))}
+ </div>
+ </div>
+ <div style={{background:"var(--surface)",border:"1px solid var(--border)",borderRadius:12,overflow:"hidden"}}>
+ <div style={{padding:"11px 16px",borderBottom:"1px solid var(--border)",fontSize:13,fontWeight:700}}>Órdenes</div>
+ {orders.map((o,i)=>(
+ <div key={o.id} style={{display:"flex",alignItems:"center",gap:12,padding:"10px 16px",borderBottom:i<orders.length-1?"1px solid var(--border)":"none"}}
+ onMouseEnter={e=>e.currentTarget.style.background="var(--el)"} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
+ <span style={{fontFamily:"'DM Mono',monospace",fontSize:11,color:"var(--t3)",width:48}}>{o.id}</span>
+ <div style={{flex:1}}><div style={{fontSize:12,fontWeight:600}}>{o.type==="mesa"?`Mesa ${o.table}`:o.type==="llevar"?"Llevar":"Delivery"}</div><div style={{fontSize:10,color:"var(--t2)",fontFamily:"'DM Mono',monospace"}}>{o.items.length} items · {o.paymentMethod}</div></div>
+ <span style={{fontFamily:"'DM Mono',monospace",fontSize:14,fontWeight:700}}>{fmt(o.totalPaid)}</span>
+ <Badge variant={o.paymentMethod==="efectivo"?"success":o.paymentMethod==="tarjeta"?"info":"purple"}>{o.paymentMethod==="transferencia"?"transf.":o.paymentMethod}</Badge>
+ </div>
+ ))}
+ </div>
+ </div>;
+};
+
+// ═══ ÓRDENES ═══
+const OrderRow=({order,isLast,company})=>{
+ const [showTicket,setShowTicket]=useState(false);
+ return <div>
+ <div style={{display:"flex",alignItems:"center",gap:12,padding:"12px 16px",borderBottom:!isLast?"1px solid var(--border)":"none"}}
+ onMouseEnter={e=>e.currentTarget.style.background="var(--el)"} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
+ <span style={{fontFamily:"'DM Mono',monospace",fontSize:11,color:"var(--t3)",width:48}}>{order.id}</span>
+ <div style={{flex:1}}><div style={{fontSize:12,fontWeight:600}}>{order.type==="mesa"?`Mesa ${order.table}`:order.type==="llevar"?"Llevar":"Delivery"}</div><div style={{fontSize:10,color:"var(--t2)",fontFamily:"'DM Mono',monospace"}}>{order.items.length} items · {order.paymentMethod}</div></div>
+ <span style={{fontFamily:"'DM Mono',monospace",fontSize:14,fontWeight:700}}>{fmt(order.totalPaid)}</span>
+ <button onClick={()=>setShowTicket(true)} title="Ver ticket" style={{width:28,height:28,borderRadius:7,background:"var(--amber-g)",border:"1px solid rgba(245,166,35,.2)",color:"var(--amber)",cursor:"pointer",fontSize:13,display:"flex",alignItems:"center",justifyContent:"center"}}></button>
+ <Badge variant="success" dot>Pagada</Badge>
+ </div>
+ {showTicket&&<TicketModal order={order} company={company} onClose={()=>setShowTicket(false)}/>}
+ </div>;
+};
+
+const OrdersModule=()=>{
+ const {state}=useStore();
+ const {orders,company}=state;
+ return <div style={{padding:18,display:"flex",flexDirection:"column",gap:14,overflowY:"auto",height:"100%"}}>
+ <h2 style={{fontSize:18,fontWeight:800}}>Órdenes del Turno</h2>
+ {orders.length===0
+ ?<div style={{padding:"50px 20px",textAlign:"center",color:"var(--t3)"}}><div style={{fontSize:40,marginBottom:10}}></div><div style={{fontFamily:"'DM Mono',monospace",fontSize:11}}>Sin órdenes completadas</div></div>
+ :<div style={{background:"var(--surface)",border:"1px solid var(--border)",borderRadius:12,overflow:"hidden"}}>
+ {orders.map((o,i)=><OrderRow key={o.id} order={o} isLast={i===orders.length-1} company={company}/>)}
+ <div style={{padding:"8px 16px",borderTop:"1px solid var(--border)",display:"flex",justifyContent:"space-between"}}>
+ <span style={{fontSize:10,color:"var(--t3)",fontFamily:"'DM Mono',monospace"}}>{orders.length} órdenes</span>
+ <span style={{fontFamily:"'DM Mono',monospace",fontSize:12,fontWeight:700,color:"var(--amber)"}}>Total: {fmt(orders.reduce((s,o)=>s+o.totalPaid,0))}</span>
+ </div>
+ </div>
+ }
+ </div>;
+};
+
+
+// ═══ CONFIGURACIÓN ═══
+const SettingsModule=()=>{
+ const {state,dispatch}=useStore();
+ const [form,setForm]=useState({...state.company});
+ const [saved,setSaved]=useState(false);
+ const set=(k,v)=>{setForm(p=>({...p,[k]:v}));setSaved(false);};
+ const handleLogo=e=>{
+ const file=e.target.files[0];if(!file)return;
+ if(file.size>500000){alert("Logo debe pesar menos de 500KB");return;}
+ const r=new FileReader();r.onload=ev=>{set("logo",ev.target.result);};r.readAsDataURL(file);
+ };
+ const ls={fontSize:10,color:"var(--t3)",fontFamily:"'DM Mono',monospace",letterSpacing:".08em",textTransform:"uppercase",fontWeight:600,display:"block",marginBottom:5};
+ const is={width:"100%",padding:"10px 14px",minHeight:42,background:"var(--el)",border:"1px solid var(--border)",borderRadius:9,color:"var(--t1)",fontSize:13,outline:"none",transition:"border-color .15s"};
+ const focusAmber=e=>e.target.style.borderColor="var(--amber)";
+ const blurBorder=e=>e.target.style.borderColor="var(--border)";
+
+ return <div style={{padding:20,display:"flex",flexDirection:"column",gap:20,overflowY:"auto",height:"100%"}}>
+ <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",flexWrap:"wrap",gap:12}}>
+ <div><h2 style={{fontSize:18,fontWeight:800}}>Configuración</h2><p style={{fontSize:11,color:"var(--t2)",marginTop:2}}>Datos de empresa · Se reflejan en todos los tickets</p></div>
+ <Btn v={saved?"success":"primary"} icon={saved?"":""} onClick={()=>{dispatch({type:"SAVE_COMPANY",p:form});setSaved(true);}}>
+ {saved?"Guardado":"Guardar Cambios"}
+ </Btn>
+ </div>
+ <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,alignItems:"start"}}>
+ {/* Formulario */}
+ <div style={{display:"flex",flexDirection:"column",gap:14}}>
+ <div style={{background:"var(--surface)",border:"1px solid var(--border)",borderRadius:13,padding:"18px"}}>
+ <div style={{fontSize:13,fontWeight:700,marginBottom:14}}> Identidad de Marca</div>
+ {/* Logo upload */}
+ <div style={{marginBottom:14}}>
+ <label style={ls}>Logotipo</label>
+ <div style={{display:"flex",alignItems:"center",gap:12}}>
+ <div style={{width:64,height:64,borderRadius:12,background:"var(--el)",border:"2px dashed var(--border)",display:"flex",alignItems:"center",justifyContent:"center",overflow:"hidden",flexShrink:0}}>
+ {form.logo?<img src={form.logo} style={{width:"100%",height:"100%",objectFit:"cover"}} alt="logo"/>:<span style={{fontSize:24,opacity:.4}}></span>}
+ </div>
+ <div>
+ <label style={{display:"inline-flex",alignItems:"center",gap:7,padding:"8px 12px",background:"var(--el)",border:"1px solid var(--border)",borderRadius:8,cursor:"pointer",fontSize:11,fontWeight:600,color:"var(--t2)"}}
+ onMouseEnter={e=>{e.currentTarget.style.borderColor="var(--amber)";e.currentTarget.style.color="var(--amber)";}}
+ onMouseLeave={e=>{e.currentTarget.style.borderColor="var(--border)";e.currentTarget.style.color="var(--t2)";}}>
+ Subir imagen
+ <input type="file" accept="image/*" onChange={handleLogo} style={{display:"none"}}/>
+ </label>
+ {form.logo&&<button onClick={()=>set("logo","")} style={{marginLeft:8,padding:"7px 11px",background:"var(--red-g)",border:"1px solid rgba(255,77,77,.2)",borderRadius:7,cursor:"pointer",fontSize:11,color:"var(--red)"}}>Quitar</button>}
+ <div style={{fontSize:10,color:"var(--t3)",fontFamily:"'DM Mono',monospace",marginTop:5}}>PNG/JPG · máx 500KB</div>
+ </div>
+ </div>
+ </div>
+ <div style={{marginBottom:12}}><label style={ls}>Nombre de la empresa *</label><input value={form.name} onChange={e=>set("name",e.target.value)} placeholder="Mi Restaurante" style={is} onFocus={focusAmber} onBlur={blurBorder}/></div>
+ <div><label style={ls}>Eslogan</label><input value={form.tagline} onChange={e=>set("tagline",e.target.value)} placeholder="Comida saludable y deliciosa" style={is} onFocus={focusAmber} onBlur={blurBorder}/></div>
+ </div>
+ <div style={{background:"var(--surface)",border:"1px solid var(--border)",borderRadius:13,padding:"18px"}}>
+ <div style={{fontSize:13,fontWeight:700,marginBottom:14}}> Contacto</div>
+ <div style={{display:"flex",flexDirection:"column",gap:12}}>
+ <div><label style={ls}>Dirección</label><input value={form.address} onChange={e=>set("address",e.target.value)} placeholder="Calle Principal #123, Ciudad" style={is} onFocus={focusAmber} onBlur={blurBorder}/></div>
+ <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+ <div><label style={ls}>Teléfono</label><input value={form.phone} onChange={e=>set("phone",e.target.value)} placeholder="555-0000" style={is} onFocus={focusAmber} onBlur={blurBorder}/></div>
+ <div><label style={ls}>Email</label><input type="email" value={form.email} onChange={e=>set("email",e.target.value)} placeholder="info@empresa.com" style={is} onFocus={focusAmber} onBlur={blurBorder}/></div>
+ </div>
+ <div><label style={ls}>Mensaje pie de ticket</label><input value={form.footerMsg} onChange={e=>set("footerMsg",e.target.value)} placeholder="¡Gracias por su visita!" style={is} onFocus={focusAmber} onBlur={blurBorder}/></div>
+ </div>
+ </div>
+ </div>
+
+ {/* Preview ticket */}
+ <div style={{background:"var(--surface)",border:"1px solid var(--border)",borderRadius:13,padding:"18px",position:"sticky",top:0}}>
+ <div style={{fontSize:13,fontWeight:700,marginBottom:14}}> Vista Previa del Ticket</div>
+ <div style={{background:"#fff",borderRadius:9,padding:"18px 14px",fontFamily:"'DM Mono',monospace",fontSize:11,color:"#111",lineHeight:1.7,boxShadow:"0 4px 20px rgba(0,0,0,.15)"}}>
+ <div style={{textAlign:"center",marginBottom:10}}>
+ {form.logo?<img src={form.logo} style={{maxWidth:60,maxHeight:60,display:"block",margin:"0 auto 5px",borderRadius:6}} alt="logo"/>:<div style={{fontSize:20,fontWeight:900,letterSpacing:".1em"}}>{(form.name||"GP").slice(0,2).toUpperCase()}</div>}
+ <div style={{fontWeight:700,fontSize:13}}>{form.name||"Mi Restaurante"}</div>
+ {form.tagline&&<div style={{fontSize:10,color:"#666"}}>{form.tagline}</div>}
+ {form.address&&<div style={{fontSize:10,color:"#666"}}>{form.address}</div>}
+ {form.phone&&<div style={{fontSize:10,color:"#666"}}>Tel: {form.phone}</div>}
+ </div>
+ <div style={{borderTop:"1px dashed #ccc",margin:"8px 0"}}/>
+ {[["Orden","#0001"],["Tipo","Mesa 3"],["Cajero","Carlos"],["Fecha",new Date().toLocaleDateString("es")],["Hora",new Date().toLocaleTimeString("es",{hour:"2-digit",minute:"2-digit"})]].map(([l,v],i)=>(
+ <div key={i} style={{display:"flex",justifyContent:"space-between"}}><span style={{color:"#888"}}>{l}:</span><span style={{fontWeight:600}}>{v}</span></div>
+ ))}
+ <div style={{borderTop:"1px dashed #ccc",margin:"8px 0"}}/>
+ {[["Pechuga a la Plancha","1","$18.000 COP","$18.000 COP"],["Arroz Blanco","2","$5.000 COP","$10.000 COP"],["Jugo Natural","1","$5.000 COP","$5.000 COP"]].map(([n,q,p,t],i)=>(
+ <div key={i} style={{marginBottom:3}}><div style={{display:"flex",justifyContent:"space-between"}}><span>{n}</span><span>{q}×{p}</span></div><div style={{textAlign:"right",fontWeight:700}}>{t}</div></div>
+ ))}
+ <div style={{borderTop:"1px dashed #ccc",margin:"8px 0"}}/>
+ <div style={{display:"flex",justifyContent:"space-between",fontWeight:900,fontSize:14}}><span>TOTAL</span><span>$33.00</span></div>
+ <div style={{display:"flex",justifyContent:"space-between",color:"#666",fontSize:10}}><span>Método</span><span>Efectivo</span></div>
+ <div style={{borderTop:"1px dashed #ccc",margin:"8px 0"}}/>
+ <div style={{textAlign:"center",fontSize:10,color:"#888"}}>{form.footerMsg||"¡Gracias por su visita!"}</div>
+ </div>
+ <div style={{marginTop:12,padding:"9px 13px",background:"var(--amber-g)",border:"1px solid rgba(245,166,35,.2)",borderRadius:8,fontSize:11,color:"var(--amber)",fontFamily:"'DM Mono',monospace"}}>
+  Guarda los cambios para aplicarlos a los tickets
+ </div>
+ </div>
+ </div>
+ </div>;
+};
+
+// ═══ TOASTS ═══
+const ToastSystem=({notifications,dispatch})=>{
+ useEffect(()=>{
+ if(!notifications.length)return;
+ const n=notifications[notifications.length-1];
+ const t=setTimeout(()=>dispatch({type:"DISMISS_NOTIF",id:n.id}),3200);
+ return()=>clearTimeout(t);
+ },[notifications]);
+ return <div style={{position:"fixed",bottom:16,right:16,zIndex:999,display:"flex",flexDirection:"column",gap:7,pointerEvents:"none"}}>
+ {notifications.map(n=>{
+ const c={success:{bg:"var(--green-g)",b:"rgba(61,220,132,.35)",c:"var(--green)"},warning:{bg:"var(--amber-g)",b:"rgba(245,166,35,.35)",c:"var(--amber)"},error:{bg:"var(--red-g)",b:"rgba(255,77,77,.35)",c:"var(--red)"},info:{bg:"var(--blue-g)",b:"rgba(77,159,255,.35)",c:"var(--blue)"}}[n.type]||{bg:"var(--el)",b:"var(--border)",c:"var(--t2)"};
+ return <div key={n.id} style={{padding:"9px 13px",background:c.bg,border:`1px solid ${c.b}`,borderRadius:9,maxWidth:280,boxShadow:"0 8px 24px rgba(0,0,0,.4)",animation:"toast 3.2s ease forwards",display:"flex",alignItems:"center",gap:8}}>
+ <span style={{fontSize:13,flexShrink:0}}>{n.type==="success"?"":n.type==="error"?"":n.type==="warning"?"":""}</span>
+ <span style={{fontSize:11,color:c.c,fontFamily:"'DM Mono',monospace",lineHeight:1.4}}>{n.msg}</span>
+ </div>;
+ })}
+ </div>;
+};
+
+
+// ═══ APP SHELL ═══
+const NAV=[
+ {id:"pos",icon:"",label:"POS",perm:"pos"},
+ {id:"orders",icon:"",label:"Órdenes",perm:"orders"},
+ {id:"inventory",icon:"",label:"Inventario",perm:"inventory"},
+ {id:"credits",icon:"",label:"Créditos",perm:"credits"},
+ {id:"reports",icon:"",label:"Reportes",perm:"reports"},
+ {id:"settings",icon:"",label:"Config",perm:"settings"},
+];
+
+const AppShell=()=>{
+ const {state,dispatch}=useStore();
+ const {session,products,orders,company}=state;
+ const [view,setView]=useState("pos");
+ const [col,setCol]=useState(false);
+ const [elapsed,setElapsed]=useState("00:00");
+ const [clock,setClock]=useState(new Date());
+
+ const lowStock=products.filter(p=>p.stock>0&&p.stock<=p.minStock).length;
+ const outStock=products.filter(p=>p.stock===0).length;
+
+ useEffect(()=>{
+ const start=new Date(session.startedAt);
+ const tick=()=>{setClock(new Date());const d=Math.floor((Date.now()-start)/1000);setElapsed(`${String(Math.floor(d/60)).padStart(2,"0")}:${String(d%60).padStart(2,"0")}`);};
+ tick();const iv=setInterval(tick,1000);return()=>clearInterval(iv);
+ },[session.startedAt]);
+
+ const allowed=NAV.filter(n=>session.perms.includes(n.perm));
+ const activeView=allowed.find(n=>n.id===view)?view:allowed[0]?.id;
+ const alerts={inventory:lowStock+outStock,orders:orders.filter(o=>o.status==="open").length};
+ const r=session.role;
+ const fullH=["pos","inventory","credits"].includes(activeView);
+
+ const renderView=()=>{
+ if(activeView==="pos") return <POSModule/>;
+ if(activeView==="inventory") return <InventoryModule/>;
+ if(activeView==="credits") return <CreditsModule/>;
+ if(activeView==="reports") return <ReportsModule/>;
+ if(activeView==="orders") return <OrdersModule/>;
+ if(activeView==="settings") return <SettingsModule/>;
+ return null;
+ };
+
+ return <div style={{display:"flex",height:"100vh",overflow:"hidden"}}>
+ {/* Sidebar */}
+ <nav style={{width:col?58:200,height:"100%",background:"var(--surface)",borderRight:"1px solid var(--border)",display:"flex",flexDirection:"column",transition:"width .2s ease",flexShrink:0,overflow:"hidden"}}>
+ <div style={{padding:col?"16px 0":"16px 13px",display:"flex",alignItems:"center",justifyContent:col?"center":"flex-start",gap:9,borderBottom:"1px solid var(--border)",minHeight:60}}>
+ {company.logo
+ ?<img src={company.logo} style={{width:30,height:30,borderRadius:7,objectFit:"cover",flexShrink:0}} alt="logo"/>
+ :<div style={{width:30,height:30,borderRadius:7,background:"var(--amber)",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,fontWeight:900,color:"#0D0F0E"}}>{(company.name||"G").slice(0,1)}</div>
+ }
+ {!col&&<div style={{minWidth:0}}><div style={{fontSize:12,fontWeight:800,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{company.name||"GASTRO POS"}</div><div style={{fontSize:8,color:"var(--amber)",fontFamily:"'DM Mono',monospace",letterSpacing:".1em"}}>v1.0</div></div>}
+ </div>
+ <div style={{flex:1,padding:"6px 5px",display:"flex",flexDirection:"column",gap:2}}>
+ {allowed.map(item=>{const act=activeView===item.id;const alert=alerts[item.id]||0;return(
+ <button key={item.id} onClick={()=>setView(item.id)} title={col?item.label:undefined}
+ style={{display:"flex",alignItems:"center",justifyContent:col?"center":"flex-start",gap:8,padding:col?"10px":"10px 11px",borderRadius:8,background:act?"var(--amber-g)":"transparent",border:`1px solid ${act?"rgba(245,166,35,.25)":"transparent"}`,color:act?"var(--amber)":"var(--t2)",cursor:"pointer",transition:"all .13s",fontSize:12,fontWeight:act?700:500,width:"100%",textAlign:"left",position:"relative"}}>
+ <span style={{fontSize:15,flexShrink:0}}>{item.icon}</span>
+ {!col&&<span style={{flex:1}}>{item.label}</span>}
+ {!col&&alert>0&&<span style={{background:"var(--amber)",color:"#0D0F0E",borderRadius:20,padding:"1px 5px",fontSize:9,fontWeight:800,fontFamily:"'DM Mono',monospace"}}>{alert}</span>}
+ {col&&alert>0&&<span style={{position:"absolute",top:4,right:4,width:6,height:6,borderRadius:"50%",background:"var(--amber)"}}/>}
+ </button>
+ );})}
+ </div>
+ <div style={{padding:col?"12px 0":"12px 13px",borderTop:"1px solid var(--border)",display:"flex",alignItems:"center",justifyContent:col?"center":"flex-start",gap:7}}>
+ <span style={{width:6,height:6,borderRadius:"50%",background:state.isOnline?"var(--green)":"var(--red)",animation:state.isOnline?"syncRing 3s infinite":"pulse 1s infinite",flexShrink:0}}/>
+ {!col&&<span style={{fontSize:9,color:state.isOnline?"var(--green)":"var(--red)",fontFamily:"'DM Mono',monospace",letterSpacing:".07em"}}>{state.isOnline?"EN LÍNEA":"OFFLINE"}</span>}
+ </div>
+ </nav>
+
+ {/* Main */}
+ <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden",minWidth:0}}>
+ <header style={{height:56,background:"var(--surface)",borderBottom:"1px solid var(--border)",display:"flex",alignItems:"center",padding:"0 14px",gap:10,flexShrink:0}}>
+ <button onClick={()=>setCol(p=>!p)} style={{width:30,height:30,borderRadius:7,background:"var(--el)",border:"1px solid var(--border)",color:"var(--t2)",cursor:"pointer",fontSize:13,display:"flex",alignItems:"center",justifyContent:"center"}}></button>
+ <h1 style={{fontSize:13,fontWeight:700,flex:1}}>{NAV.find(n=>n.id===activeView)?.label||""}</h1>
+ <div style={{fontFamily:"'DM Mono',monospace",fontSize:11,color:"var(--t2)"}}>{clock.toLocaleTimeString("es",{hour:"2-digit",minute:"2-digit"})}</div>
+ <div style={{display:"flex",alignItems:"center",gap:5,padding:"4px 9px",background:"var(--el)",border:"1px solid var(--border)",borderRadius:7}}>
+ <span style={{fontSize:9,color:"var(--t3)",fontFamily:"'DM Mono',monospace"}}>TURNO</span>
+ <span style={{fontSize:11,color:"var(--amber)",fontFamily:"'DM Mono',monospace",fontWeight:500}}>{elapsed}</span>
+ </div>
+ <div style={{display:"flex",alignItems:"center",gap:8,padding:"5px 10px",background:"var(--el)",border:"1px solid var(--border)",borderRadius:7}}>
+ <div style={{width:24,height:24,borderRadius:6,background:`${r.color}18`,border:`1px solid ${r.color}35`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:13}}>{r.icon}</div>
+ <div><div style={{fontSize:11,fontWeight:700,lineHeight:1}}>{session.user.name.split(" ")[0]}</div><div style={{fontSize:9,color:"var(--t3)",fontFamily:"'DM Mono',monospace"}}>{r.label}</div></div>
+ </div>
+ <button onClick={()=>dispatch({type:"SET_ONLINE",val:!state.isOnline})} title={state.isOnline?"Simular offline":"Reconectar"}
+ style={{width:30,height:30,borderRadius:7,background:state.isOnline?"var(--el)":"var(--red-g)",border:`1px solid ${state.isOnline?"var(--border)":"rgba(255,77,77,.3)"}`,color:state.isOnline?"var(--t3)":"var(--red)",cursor:"pointer",fontSize:13,display:"flex",alignItems:"center",justifyContent:"center"}}>
+ {state.isOnline?"":""}
+ </button>
+ <button onClick={()=>dispatch({type:"LOGOUT"})}
+ style={{padding:"5px 11px",background:"var(--red-g)",border:"1px solid rgba(255,77,77,.22)",borderRadius:7,cursor:"pointer",color:"var(--red)",fontSize:11,fontWeight:600,transition:"all .13s"}}
+ onMouseEnter={e=>e.currentTarget.style.background="rgba(255,77,77,.18)"} onMouseLeave={e=>e.currentTarget.style.background="var(--red-g)"}>
+ Salir
+ </button>
+ </header>
+ <main style={{flex:1,overflow:fullH?"hidden":"auto"}}>{renderView()}</main>
+ </div>
+ </div>;
+};
+
+// ═══ ENTRY POINT ═══
+function App(){
+ const [state,dispatch]=useReducer(reducer,initialState);
+ useEffect(()=>{
+ const on=()=>dispatch({type:"SET_ONLINE",val:true});
+ const off=()=>dispatch({type:"SET_ONLINE",val:false});
+ window.addEventListener("online",on);window.addEventListener("offline",off);
+ return()=>{window.removeEventListener("online",on);window.removeEventListener("offline",off);};
+ },[]);
+ return <Ctx.Provider value={{state,dispatch}}>
+ <GlobalCSS/>
+ {state.session?<AppShell/>:<LoginScreen/>}
+ <ToastSystem notifications={state.notifications} dispatch={dispatch}/>
+ </Ctx.Provider>;
+}
+
+try {
+ document.getElementById('loading').style.display='none';
+ document.getElementById('root').style.display='block';
+ ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+} catch(e) {
+ document.getElementById('loading').innerHTML = '<div style="color:#FF4D4D;font-family:monospace;padding:20px;text-align:center"><div style="font-size:40px;margin-bottom:12px"></div><div style="font-size:13px;margin-bottom:8px">Error al cargar</div><div style="font-size:11px;color:#8A9490;max-width:300px">'+e.message+'</div></div>';
+}
+ </script>
+</body>
+</html>
