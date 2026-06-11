@@ -67,12 +67,7 @@ const ROLES={
  mesero:{label:"Mesero",icon:"",color:"#3DDC84",perms:["pos","orders"]},
  cocina:{label:"Cocina",icon:"‍",color:"#FF8C42",perms:["orders"]},
 };
-const USERS=[
- {id:"u1",name:"Carlos Mendoza",pin:"1234",role:"admin"},
- {id:"u2",name:"Ana García",pin:"2222",role:"cajero"},
- {id:"u3",name:"Luis Torres",pin:"3333",role:"mesero"},
- {id:"u4",name:"María Ruiz",pin:"4444",role:"cocina"},
-];
+const USERS=[];
 const CATS=[
  {id:"all",label:"Todo",icon:"",color:"var(--t2)"},
  {id:"proteina",label:"Proteína",icon:"",color:"#FF8C42"},
@@ -80,26 +75,8 @@ const CATS=[
  {id:"ensalada",label:"Ensalada",icon:"",color:"#3DDC84"},
  {id:"bebidas",label:"Bebidas",icon:"",color:"#4D9FFF"},
 ];
-const INIT_PRODUCTS=[
- {id:"p1",name:"Pechuga a la Plancha",cat:"proteina",price:18000,cost:7000,stock:20,minStock:5,sku:"PRO-001",variants:[]},
- {id:"p2",name:"Lomo de Res",cat:"proteina",price:24000,cost:9500,stock:15,minStock:4,sku:"PRO-002",variants:[{name:"Término medio",extra:0},{name:"Bien cocido",extra:0}]},
- {id:"p3",name:"Pollo BBQ",cat:"proteina",price:20000,cost:8000,stock:12,minStock:4,sku:"PRO-003",variants:[]},
- {id:"p4",name:"Arroz Blanco",cat:"carbohidrato",price:5000,cost:1500,stock:50,minStock:10,sku:"CAR-001",variants:[]},
- {id:"p5",name:"Pasta Integral",cat:"carbohidrato",price:12000,cost:4000,stock:18,minStock:5,sku:"CAR-002",variants:[{name:"Salsa roja",extra:0},{name:"Salsa blanca",extra:0}]},
- {id:"p6",name:"Papa al Vapor",cat:"carbohidrato",price:4500,cost:1200,stock:30,minStock:8,sku:"CAR-003",variants:[]},
- {id:"p7",name:"Ensalada Verde",cat:"ensalada",price:8000,cost:2500,stock:25,minStock:6,sku:"ENS-001",variants:[]},
- {id:"p8",name:"Ensalada César",cat:"ensalada",price:11000,cost:3500,stock:20,minStock:5,sku:"ENS-002",variants:[{name:"Sin pollo",extra:-2},{name:"Con pollo",extra:0}]},
- {id:"p9",name:"Ensalada de Frutas",cat:"ensalada",price:7000,cost:2000,stock:15,minStock:4,sku:"ENS-003",variants:[]},
- {id:"p10",name:"Agua Natural",cat:"bebidas",price:2500,cost:800,stock:60,minStock:15,sku:"BEB-001",variants:[{name:"500ml",extra:0},{name:"1L",extra:1.5}]},
- {id:"p11",name:"Jugo Natural",cat:"bebidas",price:5000,cost:1500,stock:30,minStock:8,sku:"BEB-002",variants:[{name:"Naranja",extra:0},{name:"Zanahoria",extra:0},{name:"Verde",extra:1}]},
- {id:"p12",name:"Té / Infusión",cat:"bebidas",price:3500,cost:600,stock:40,minStock:10,sku:"BEB-003",variants:[]},
-];
-const INIT_CLIENTS=[
- {id:"c1",name:"Restaurante El Fogón",contact:"Marcos Díaz",phone:"555-0101",creditLimit:1500000,balance:320500,status:"active",riskLevel:"low",transactions:[]},
- {id:"c2",name:"Catering Buena Mesa",contact:"Luisa Vargas",phone:"555-0202",creditLimit:800000,balance:780000,status:"active",riskLevel:"high",transactions:[]},
- {id:"c3",name:"Hotel Gran Palacio",contact:"Roberto Kim",phone:"555-0303",creditLimit:3000000,balance:0,status:"active",riskLevel:"low",transactions:[]},
- {id:"c4",name:"Pupusería Don Chico",contact:"Ana Flores",phone:"555-0404",creditLimit:500000,balance:500000,status:"suspended",riskLevel:"critical",transactions:[]},
-];
+const INIT_PRODUCTS=[];
+const INIT_CLIENTS=[];
 
 // ═══ STORE ═══
 const initialState={
@@ -116,6 +93,7 @@ function reducer(state,action){
  case"LOGOUT": return{...state,session:null,activeOrder:null};
  case"SET_ONLINE":return{...state,isOnline:action.val,notifications:addN(state,action.val?"Conexión restaurada":"Modo offline",action.val?"success":"warning")};
  case"SAVE_PRODUCT":{const e=state.products.find(p=>p.id===action.p.id);return{...state,products:e?state.products.map(p=>p.id===action.p.id?action.p:p):[...state.products,action.p],notifications:addN(state,`"${action.p.name}" guardado`,"success")};}
+ case"DELETE_PRODUCT":{const nm=state.products.find(p=>p.id===action.id)?.name||"Producto";return{...state,products:state.products.filter(p=>p.id!==action.id),notifications:addN(state,`"${nm}" eliminado`,"warning")};}
  case"ADJUST_STOCK":return{...state,products:state.products.map(p=>p.id===action.id?{...p,stock:Math.max(0,p.stock+action.delta)}:p),notifications:addN(state,`Stock ajustado ${action.delta>0?"+":""}${action.delta}`,"info")};
  case"NEW_ORDER":return{...state,activeOrder:{id:`#${String(state.orderCounter).padStart(4,"0")}`,table:action.table,type:action.ot,items:[],discount:0,note:"",status:"open",createdAt:new Date().toISOString()},orderCounter:state.orderCounter+1};
  case"ADD_ITEM":{const o=state.activeOrder;if(!o)return state;const key=`${action.item.productId}-${action.item.variant||""}`;const ex=o.items.find(i=>i.key===key);return{...state,activeOrder:{...o,items:ex?o.items.map(i=>i.key===key?{...i,qty:i.qty+1}:i):[...o.items,{...action.item,key,qty:1}]}};}
@@ -672,11 +650,28 @@ const StockModal=({product,onClose})=>{
  </Modal>;
 };
 
+
+const ConfirmDeleteModal=({product,onClose,onConfirm})=>(
+ <Modal onClose={onClose} title="Eliminar producto" maxW={340}>
+  <div style={{padding:"16px 20px",display:"flex",flexDirection:"column",gap:14}}>
+   <div style={{display:"flex",gap:12,alignItems:"center",padding:"12px 14px",background:"var(--red-g)",border:"1px solid rgba(255,77,77,.25)",borderRadius:10}}>
+    <span style={{fontSize:24}}>🗑️</span>
+    <div><div style={{fontSize:13,fontWeight:700,color:"var(--red)"}}>{product.name}</div><div style={{fontSize:10,color:"var(--t2)",fontFamily:"'DM Mono',monospace",marginTop:2}}>{product.sku} · Stock: {product.stock}</div></div>
+   </div>
+   <p style={{fontSize:12,color:"var(--t2)",lineHeight:1.6}}>Esta acción es <strong style={{color:"var(--t1)"}}>irreversible</strong>. El producto será eliminado del inventario y no estará disponible en el POS.</p>
+  </div>
+  <div style={{padding:"12px 20px",borderTop:"1px solid var(--border)",display:"flex",gap:8,justifyContent:"flex-end"}}>
+   <Btn v="ghost" onClick={onClose}>Cancelar</Btn>
+   <Btn v="danger" icon="🗑" onClick={()=>{onConfirm();onClose();}}>Eliminar</Btn>
+  </div>
+ </Modal>
+);
+
 const InventoryModule=()=>{
- const {state}=useStore();
+ const {state,dispatch}=useStore();
  const {products}=state;
  const [cat,setCat]=useState("all");const [search,setSearch]=useState("");
- const [showNew,setShowNew]=useState(false);const [stockProd,setStockProd]=useState(null);
+ const [showNew,setShowNew]=useState(false);const [stockProd,setStockProd]=useState(null);const [deleteProd,setDeleteProd]=useState(null);
  const filtered=useMemo(()=>{let l=[...products];if(cat!=="all")l=l.filter(p=>p.cat===cat);if(search){const q=search.toLowerCase();l=l.filter(p=>p.name.toLowerCase().includes(q)||p.sku.toLowerCase().includes(q));}return l.sort((a,b)=>a.stock-b.stock);},[products,cat,search]);
  const stats=useMemo(()=>({total:products.length,low:products.filter(p=>p.stock>0&&p.stock<=p.minStock).length,out:products.filter(p=>p.stock===0).length,value:products.reduce((s,p)=>s+p.cost*p.stock,0)}),[products]);
  const si=(stock,min)=>stock===0?{label:"Agotado",v:"danger",color:"var(--red)"}:stock<=min?{label:"Bajo",v:"warning",color:"var(--amber)"}:{label:"OK",v:"success",color:"var(--green)"};
@@ -718,12 +713,14 @@ const InventoryModule=()=>{
  <div style={{marginTop:3}}><Badge variant={s.v}>{s.label}</Badge></div>
  </div>
  <button onClick={()=>setStockProd(p)} style={{width:26,height:26,borderRadius:6,background:"var(--amber-g)",border:"1px solid rgba(245,166,35,.2)",color:"var(--amber)",cursor:"pointer",fontSize:12,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>±</button>
+ <button onClick={()=>setDeleteProd(p)} title="Eliminar producto" style={{width:26,height:26,borderRadius:6,background:"var(--red-g)",border:"1px solid rgba(255,77,77,.2)",color:"var(--red)",cursor:"pointer",fontSize:12,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,marginLeft:4}}>🗑</button>
  </div>
  );})}
  {filtered.length===0&&<div style={{padding:"40px 20px",textAlign:"center",color:"var(--t3)"}}><div style={{fontSize:32,marginBottom:8}}></div><div style={{fontSize:11,fontFamily:"'DM Mono',monospace"}}>Sin productos</div></div>}
  </div>
  {showNew&&<NewProductModal onClose={()=>setShowNew(false)}/>}
- {stockProd&&<StockModal product={stockProd} onClose={()=>setStockProd(null)}/>}
+ {stockProd&&<StockModal product={stockProd} onClose={()=>setStockProd(null)}/> }
+ {deleteProd&&<ConfirmDeleteModal product={deleteProd} onClose={()=>setDeleteProd(null)} onConfirm={()=>dispatch({type:"DELETE_PRODUCT",id:deleteProd.id})}/>}
  </div>;
 };
 
