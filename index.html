@@ -63,6 +63,7 @@ const GlobalCSS=()=><style>{`
 // ═══ DATOS ═══
 const ROLES={
  admin:{label:"Administrador",icon:"",color:"#F5A623",perms:["pos","pos.discount","orders","orders.cancel","inventory","inventory.edit","credits","credits.edit","reports","settings","users"]},
+ vendedor:{label:"Vendedor",icon:"",color:"#C084FC",perms:["pos","pos.discount","orders","reports"]},
  cajero:{label:"Cajero",icon:"",color:"#4D9FFF",perms:["pos","orders","credits","reports"]},
  mesero:{label:"Mesero",icon:"",color:"#3DDC84",perms:["pos","orders"]},
  cocina:{label:"Cocina",icon:"‍",color:"#FF8C42",perms:["orders"]},
@@ -82,7 +83,7 @@ const INIT_CLIENTS=[];
 
 // ═══ STORE ═══
 const initialState={
- session:null,products:INIT_PRODUCTS,clients:INIT_CLIENTS,
+ session:null,products:INIT_PRODUCTS,clients:INIT_CLIENTS,users:USERS,
  orders:[],activeOrder:null,orderCounter:1,
  isOnline:true,notifications:[],
  company:{name:"Mi Restaurante",tagline:"Comida saludable y deliciosa",address:"Calle Principal #123",phone:"555-0000",email:"",logo:"",footerMsg:"¡Gracias por su visita!"},
@@ -107,6 +108,8 @@ function reducer(state,action){
  case"ADD_CLIENT":return{...state,clients:[...state.clients,action.p],notifications:addN(state,`"${action.p.name}" creado`,"success")};
  case"ADD_CREDIT_TX":return{...state,clients:state.clients.map(c=>{if(c.id!==action.cid)return c;const delta=action.tx.type==="charge"?action.tx.amount:-action.tx.amount;const balance=Math.max(0,c.balance+delta);const u=(balance/c.creditLimit)*100;const riskLevel=u>=95?"critical":u>=75?"high":u>=40?"medium":"low";return{...c,balance,riskLevel,transactions:[...c.transactions,{...action.tx,id:`tx${Date.now()}`,date:new Date().toISOString(),balance}]};})};
  case"SAVE_COMPANY":return{...state,company:{...state.company,...action.p},notifications:addN(state,"Configuración guardada","success")};
+ case"SAVE_USER":{const e=state.users.find(u=>u.id===action.p.id);return{...state,users:e?state.users.map(u=>u.id===action.p.id?action.p:u):[...state.users,action.p],notifications:addN(state,`"${action.p.name}" guardado`,"success")};}
+ case"DELETE_USER":{const nm=state.users.find(u=>u.id===action.id)?.name||"Usuario";return{...state,users:state.users.filter(u=>u.id!==action.id),notifications:addN(state,`"${nm}" eliminado`,"warning")};}
  case"DISMISS_NOTIF":return{...state,notifications:state.notifications.filter(n=>n.id!==action.id)};
  default:return state;
  }
@@ -178,7 +181,7 @@ const PinPad=({onComplete})=>{
 };
 
 const LoginScreen=()=>{
- const {dispatch}=useStore();
+ const {state,dispatch}=useStore();
  const [step,setStep]=useState("users");
  const [user,setUser]=useState(null);
  const [err,setErr]=useState("");const [at,setAt]=useState(0);
@@ -217,7 +220,7 @@ const LoginScreen=()=>{
  {step==="users"?(
  <div className="fu" style={{display:"flex",flexDirection:"column",gap:10}}>
  <div style={{fontSize:11,color:"var(--t3)",fontFamily:"'DM Mono',monospace",letterSpacing:".1em",textTransform:"uppercase",marginBottom:6}}>Selecciona tu perfil</div>
- {USERS.map((u,i)=>{const r=ROLES[u.role];return(
+ {state.users.map((u,i)=>{const r=ROLES[u.role];return(
  <button key={u.id} onClick={()=>{setUser(u);setStep("pin");setErr("");setAt(0);}} className="fu"
  style={{display:"flex",alignItems:"center",gap:13,padding:"13px 16px",background:"transparent",border:"1px solid var(--border)",borderRadius:12,cursor:"pointer",textAlign:"left",width:"100%",transition:"all .14s",animationDelay:`${i*.05}s`,animationFillMode:"both"}}
  onMouseEnter={e=>{e.currentTarget.style.background="var(--el)";e.currentTarget.style.borderColor=`${r.color}40`;}}
@@ -977,6 +980,87 @@ const OrdersModule=()=>{
 
 
 // ═══ CONFIGURACIÓN ═══
+
+
+const UsersPanel=()=>{
+ const {state,dispatch}=useStore();
+ const [showModal,setShowModal]=useState(false);
+ const [editUser,setEditUser]=useState(null);
+ const [delUser,setDelUser]=useState(null);
+ const users=state.users||[];
+ return <div style={{background:"var(--surface)",border:"1px solid var(--border)",borderRadius:13,padding:"18px"}}>
+  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
+   <div><div style={{fontSize:13,fontWeight:700}}> Usuarios del Sistema</div><div style={{fontSize:10,color:"var(--t2)",fontFamily:"'DM Mono',monospace",marginTop:2}}>{users.length} usuario{users.length!==1?"s":""} registrado{users.length!==1?"s":""}</div></div>
+   <Btn v="primary" icon="+" sz="sm" onClick={()=>{setEditUser(null);setShowModal(true);}}>Nuevo</Btn>
+  </div>
+  <div style={{display:"flex",flexDirection:"column",gap:8}}>
+   {users.map(u=>{const r=ROLES[u.role]||ROLES.cajero;return(
+    <div key={u.id} style={{display:"flex",alignItems:"center",gap:10,padding:"11px 14px",background:"var(--el)",border:"1px solid var(--border)",borderRadius:10}}
+     onMouseEnter={e=>e.currentTarget.style.borderColor="var(--amber)"} onMouseLeave={e=>e.currentTarget.style.borderColor="var(--border)"}>
+     <div style={{width:36,height:36,borderRadius:9,background:`${r.color}18`,border:`1px solid ${r.color}35`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}>{r.icon}</div>
+     <div style={{flex:1,minWidth:0}}>
+      <div style={{fontSize:13,fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{u.name}</div>
+      <div style={{fontSize:10,fontFamily:"'DM Mono',monospace",color:r.color,marginTop:1}}>{r.label}</div>
+     </div>
+     <div style={{fontFamily:"'DM Mono',monospace",fontSize:11,color:"var(--t3)",letterSpacing:".15em",marginRight:8}}>{"•".repeat(u.pin.length)}</div>
+     <button onClick={()=>{setEditUser(u);setShowModal(true);}} style={{width:28,height:28,borderRadius:7,background:"var(--amber-g)",border:"1px solid rgba(245,166,35,.2)",color:"var(--amber)",cursor:"pointer",fontSize:13,display:"flex",alignItems:"center",justifyContent:"center"}}>✏</button>
+     <button onClick={()=>setDelUser(u)} style={{width:28,height:28,borderRadius:7,background:"var(--red-g)",border:"1px solid rgba(255,77,77,.2)",color:"var(--red)",cursor:"pointer",fontSize:13,display:"flex",alignItems:"center",justifyContent:"center"}}>🗑</button>
+    </div>
+   );})}
+   {users.length===0&&<div style={{padding:"24px",textAlign:"center",color:"var(--t3)",fontSize:11,fontFamily:"'DM Mono',monospace"}}>Sin usuarios — crea el primero</div>}
+  </div>
+  {showModal&&<UserModal user={editUser} onClose={()=>{setShowModal(false);setEditUser(null);}}/>}
+  {delUser&&<Modal onClose={()=>setDelUser(null)} title="Eliminar usuario" maxW={340}>
+   <div style={{padding:"16px 20px",display:"flex",flexDirection:"column",gap:14}}>
+    <div style={{display:"flex",gap:12,alignItems:"center",padding:"12px 14px",background:"var(--red-g)",border:"1px solid rgba(255,77,77,.25)",borderRadius:10}}>
+     <span style={{fontSize:22}}>{(ROLES[delUser.role]||ROLES.cajero).icon}</span>
+     <div><div style={{fontSize:13,fontWeight:700,color:"var(--red)"}}>{delUser.name}</div><div style={{fontSize:10,color:"var(--t2)",fontFamily:"'DM Mono',monospace",marginTop:2}}>{(ROLES[delUser.role]||ROLES.cajero).label}</div></div>
+    </div>
+    <p style={{fontSize:12,color:"var(--t2)",lineHeight:1.6}}>Este usuario ya no podrá iniciar sesión en el sistema.</p>
+   </div>
+   <div style={{padding:"12px 20px",borderTop:"1px solid var(--border)",display:"flex",gap:8,justifyContent:"flex-end"}}>
+    <Btn v="ghost" onClick={()=>setDelUser(null)}>Cancelar</Btn>
+    <Btn v="danger" icon="🗑" onClick={()=>{dispatch({type:"DELETE_USER",id:delUser.id});setDelUser(null);}}>Eliminar</Btn>
+   </div>
+  </Modal>}
+ </div>;
+};
+
+const UserModal=({user,onClose})=>{
+ const {dispatch}=useStore();
+ const isNew=!user?.id;
+ const [form,setForm]=useState({name:user?.name||"",pin:user?.pin||"",role:user?.role||"vendedor",...(user||{})});
+ const set=(k,v)=>setForm(p=>({...p,[k]:v}));
+ const valid=form.name.trim().length>=2&&form.pin.length===4&&/^\d{4}$/.test(form.pin);
+ const ls={fontSize:10,color:"var(--t3)",fontFamily:"'DM Mono',monospace",letterSpacing:".08em",textTransform:"uppercase",fontWeight:600,display:"block",marginBottom:5};
+ const is={width:"100%",padding:"10px 14px",minHeight:42,background:"var(--el)",border:"1px solid var(--border)",borderRadius:9,color:"var(--t1)",fontSize:13,outline:"none"};
+ return <Modal onClose={onClose} title={isNew?"Nuevo Usuario":"Editar Usuario"} maxW={380}>
+  <div style={{padding:18,display:"flex",flexDirection:"column",gap:14}}>
+   <div><label style={ls}>Nombre completo *</label><input value={form.name} onChange={e=>set("name",e.target.value)} placeholder="Nombre Apellido" style={is} onFocus={e=>e.target.style.borderColor="var(--amber)"} onBlur={e=>e.target.style.borderColor="var(--border)"}/></div>
+   <div>
+    <label style={ls}>PIN (4 dígitos) *</label>
+    <input type="password" inputMode="numeric" maxLength={4} value={form.pin} onChange={e=>set("pin",e.target.value.replace(/\D/g,"").slice(0,4))} placeholder="••••" style={{...is,letterSpacing:"0.3em",textAlign:"center",fontSize:20}} onFocus={e=>e.target.style.borderColor="var(--amber)"} onBlur={e=>e.target.style.borderColor="var(--border)"}/>
+    <div style={{fontSize:10,color:"var(--t3)",fontFamily:"'DM Mono',monospace",marginTop:4}}>Solo números · exactamente 4 dígitos</div>
+   </div>
+   <div>
+    <label style={ls}>Rol *</label>
+    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+     {Object.entries(ROLES).map(([id,r])=>(
+      <button key={id} onClick={()=>set("role",id)} style={{padding:"10px 8px",borderRadius:9,cursor:"pointer",textAlign:"center",background:form.role===id?`${r.color}18`:"var(--el)",border:`1px solid ${form.role===id?r.color+"45":"var(--border)"}`,color:form.role===id?r.color:"var(--t2)",transition:"all .12s"}}>
+       <div style={{fontSize:17,marginBottom:2}}>{r.icon}</div>
+       <div style={{fontSize:10,fontWeight:700}}>{r.label}</div>
+      </button>
+     ))}
+    </div>
+   </div>
+  </div>
+  <div style={{padding:"12px 18px",borderTop:"1px solid var(--border)",display:"flex",gap:8,justifyContent:"flex-end"}}>
+   <Btn v="ghost" onClick={onClose}>Cancelar</Btn>
+   <Btn v="primary" disabled={!valid} onClick={()=>{dispatch({type:"SAVE_USER",p:{...form,id:form.id||("u"+Date.now())}});onClose();}}>Guardar</Btn>
+  </div>
+ </Modal>;
+};
+
 const SettingsModule=()=>{
  const {state,dispatch}=useStore();
  const [form,setForm]=useState({...state.company});
@@ -1069,6 +1153,8 @@ const SettingsModule=()=>{
  </div>
  </div>
  </div>
+ {/* Users section */}
+ <UsersPanel/>
  </div>;
 };
 
