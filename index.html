@@ -11,8 +11,8 @@
  body{background:#0D0F0E}
  #root{height:100vh}
  #loading{height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#0D0F0E;gap:16px}
- .logo-load{width:56px;height:56px;border-radius:14px;background:#F5A623;display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:900;color:#0D0F0E;font-family:sans-serif}
- .text-load{color:#8A9490;font-size:13px;font-family:monospace;letter-spacing:.08em}
+ .logo-load{width:56px;height:56px;border-radius:14px;background:#059669;display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:900;color:#FFFFFF;font-family:sans-serif}
+ .text-load{color:#5A7068;font-size:13px;font-family:monospace;letter-spacing:.08em}
  @keyframes spin{to{transform:rotate(360deg)}}
  .spinner-load{width:20px;height:20px;border:2px solid #2A3330;border-top-color:#F5A623;border-radius:50%;animation:spin .8s linear infinite}
  </style>
@@ -32,23 +32,23 @@ const {useState,useMemo,useCallback,useEffect,useReducer,createContext,useContex
 
 // ═══ CSS ═══
 const GlobalCSS=()=><style>{`
- @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Mono:wght@300;400;500&display=swap');
+ @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@300;400;500;600&display=swap');
  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
  :root{
- --bg:#0D0F0E;--surface:#161A18;--el:#1E2421;--border:#2A3330;
- --amber:#F5A623;--amber-d:#C4841A;--amber-g:rgba(245,166,35,.12);
- --green:#3DDC84;--green-g:rgba(61,220,132,.15);
- --red:#FF4D4D;--red-g:rgba(255,77,77,.15);
- --blue:#4D9FFF;--blue-g:rgba(77,159,255,.12);
- --purple:#C084FC;--purple-g:rgba(192,132,252,.12);
- --orange:#FF8C42;--orange-g:rgba(255,140,66,.13);
- --t1:#F0EDE8;--t2:#8A9490;--t3:#4A5550;
+ --bg:#F4F6F5;--surface:#FFFFFF;--el:#EEF1F0;--border:#E0E5E3;
+ --amber:#059669;--amber-d:#047857;--amber-g:rgba(5,150,105,.10);
+ --green:#059669;--green-g:rgba(5,150,105,.10);
+ --red:#EF4444;--red-g:rgba(239,68,68,.10);
+ --blue:#3B82F6;--blue-g:rgba(59,130,246,.10);
+ --purple:#8B5CF6;--purple-g:rgba(139,92,246,.10);
+ --orange:#F97316;--orange-g:rgba(249,115,22,.10);
+ --t1:#0F1F1A;--t2:#5A7068;--t3:#94ADA6;
  }
- html,body,#root{height:100%;background:var(--bg);color:var(--t1);font-family:'Syne',sans-serif;-webkit-font-smoothing:antialiased;overscroll-behavior:none}
+ html,body,#root{height:100%;background:var(--bg);color:var(--t1);font-family:'Inter',sans-serif;-webkit-font-smoothing:antialiased;overscroll-behavior:none}
  ::-webkit-scrollbar{width:4px;height:4px}
  ::-webkit-scrollbar-track{background:transparent}
- ::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
- input,select,textarea,button{font-family:'Syne',sans-serif}
+ ::-webkit-scrollbar-thumb{background:var(--t3);border-radius:2px;opacity:.4}
+ input,select,textarea,button{font-family:'Inter',sans-serif}
  @keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
  @keyframes slideIn{from{opacity:0;transform:translateX(16px)}to{opacity:1;transform:translateX(0)}}
  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
@@ -122,32 +122,32 @@ const mpct=(a,b)=>b>0?Math.round(((a-b)/a)*100):0;
 // ═══ BASE COMPONENTS ═══
 const Badge=({variant="default",children,dot})=>{
  const v={default:{bg:"var(--el)",c:"var(--t2)",b:"var(--border)"},success:{bg:"var(--green-g)",c:"var(--green)",b:"rgba(61,220,132,.3)"},warning:{bg:"var(--amber-g)",c:"var(--amber)",b:"rgba(245,166,35,.3)"},danger:{bg:"var(--red-g)",c:"var(--red)",b:"rgba(255,77,77,.3)"},info:{bg:"var(--blue-g)",c:"var(--blue)",b:"rgba(77,159,255,.3)"},purple:{bg:"var(--purple-g)",c:"var(--purple)",b:"rgba(192,132,252,.3)"},orange:{bg:"var(--orange-g)",c:"var(--orange)",b:"rgba(255,140,66,.3)"}}[variant]||{bg:"var(--el)",c:"var(--t2)",b:"var(--border)"};
- return <span style={{display:"inline-flex",alignItems:"center",gap:5,padding:"3px 9px",borderRadius:6,background:v.bg,color:v.c,border:`1px solid ${v.b}`,fontSize:10,fontWeight:600,letterSpacing:".06em",textTransform:"uppercase",fontFamily:"'DM Mono',monospace",whiteSpace:"nowrap"}}>{dot&&<span style={{width:5,height:5,borderRadius:"50%",background:v.c,animation:"pulse 2s infinite"}}/>}{children}</span>;
+ return <span style={{display:"inline-flex",alignItems:"center",gap:5,padding:"3px 9px",borderRadius:6,background:v.bg,color:v.c,border:`1px solid ${v.b}`,fontSize:10,fontWeight:600,letterSpacing:".06em",textTransform:"uppercase",fontFamily:"'JetBrains Mono',monospace",whiteSpace:"nowrap"}}>{dot&&<span style={{width:5,height:5,borderRadius:"50%",background:v.c,animation:"pulse 2s infinite"}}/>}{children}</span>;
 };
 
 const Btn=({v="secondary",sz="md",children,onClick,icon,disabled,full,style:sx={}})=>{
  const [h,setH]=useState(false);
  const s={sm:{p:"7px 12px",fs:11,mh:34},md:{p:"10px 18px",fs:13,mh:44},lg:{p:"13px 22px",fs:15,mh:54}}[sz];
- const vs={primary:{bg:h?"var(--amber-d)":"var(--amber)",c:"#0D0F0E",b:"transparent"},secondary:{bg:h?"#252C29":"var(--el)",c:"var(--t1)",b:"var(--border)"},ghost:{bg:h?"var(--el)":"transparent",c:"var(--t2)",b:"transparent"},danger:{bg:h?"rgba(255,77,77,.22)":"var(--red-g)",c:"var(--red)",b:"rgba(255,77,77,.2)"},success:{bg:h?"rgba(61,220,132,.22)":"var(--green-g)",c:"var(--green)",b:"rgba(61,220,132,.2)"},amber:{bg:h?"rgba(245,166,35,.22)":"var(--amber-g)",c:"var(--amber)",b:"rgba(245,166,35,.2)"}}[v]||{bg:"var(--el)",c:"var(--t1)",b:"var(--border)"};
+ const vs={primary:{bg:h?"var(--amber-d)":"var(--amber)",c:"var(--bg)",b:"transparent"},secondary:{bg:h?"#252C29":"var(--el)",c:"var(--t1)",b:"var(--border)"},ghost:{bg:h?"var(--el)":"transparent",c:"var(--t2)",b:"transparent"},danger:{bg:h?"rgba(255,77,77,.22)":"var(--red-g)",c:"var(--red)",b:"rgba(255,77,77,.2)"},success:{bg:h?"rgba(61,220,132,.22)":"var(--green-g)",c:"var(--green)",b:"rgba(61,220,132,.2)"},amber:{bg:h?"rgba(245,166,35,.22)":"var(--amber-g)",c:"var(--amber)",b:"rgba(245,166,35,.2)"}}[v]||{bg:"var(--el)",c:"var(--t1)",b:"var(--border)"};
  return <button disabled={disabled} onClick={onClick} onMouseEnter={()=>setH(true)} onMouseLeave={()=>setH(false)} style={{display:"inline-flex",alignItems:"center",justifyContent:"center",gap:7,padding:s.p,minHeight:s.mh,fontSize:s.fs,fontWeight:600,background:vs.bg,color:vs.c,border:`1px solid ${vs.b}`,borderRadius:9,cursor:disabled?"not-allowed":"pointer",opacity:disabled?.45:1,transition:"all .13s",width:full?"100%":"auto",userSelect:"none",WebkitTapHighlightColor:"transparent",...sx}}>{icon&&<span style={{fontSize:s.fs+2,lineHeight:1}}>{icon}</span>}{children}</button>;
 };
 
 const FInput=({label,value,onChange,placeholder,type="text",prefix,suffix,required})=>{
  const [f,setF]=useState(false);
  return <div style={{display:"flex",flexDirection:"column",gap:5}}>
- {label&&<label style={{fontSize:10,color:"var(--t3)",fontFamily:"'DM Mono',monospace",letterSpacing:".08em",textTransform:"uppercase",fontWeight:600}}>{label}{required&&<span style={{color:"var(--red)",marginLeft:3}}>*</span>}</label>}
+ {label&&<label style={{fontSize:10,color:"var(--t3)",fontFamily:"'JetBrains Mono',monospace",letterSpacing:".08em",textTransform:"uppercase",fontWeight:600}}>{label}{required&&<span style={{color:"var(--red)",marginLeft:3}}>*</span>}</label>}
  <div style={{position:"relative"}}>
- {prefix&&<span style={{position:"absolute",left:11,top:"50%",transform:"translateY(-50%)",color:"var(--t3)",fontFamily:"'DM Mono',monospace",fontSize:13,pointerEvents:"none"}}>{prefix}</span>}
+ {prefix&&<span style={{position:"absolute",left:11,top:"50%",transform:"translateY(-50%)",color:"var(--t3)",fontFamily:"'JetBrains Mono',monospace",fontSize:13,pointerEvents:"none"}}>{prefix}</span>}
  <input type={type} value={value} onChange={onChange} placeholder={placeholder} style={{width:"100%",padding:"10px 14px",minHeight:42,background:"var(--el)",border:`1px solid ${f?"var(--amber)":"var(--border)"}`,borderRadius:9,color:"var(--t1)",fontSize:13,outline:"none",transition:"border-color .15s",paddingLeft:prefix?30:14,paddingRight:suffix?40:14}} onFocus={()=>setF(true)} onBlur={()=>setF(false)}/>
- {suffix&&<span style={{position:"absolute",right:12,top:"50%",transform:"translateY(-50%)",color:"var(--t3)",fontFamily:"'DM Mono',monospace",fontSize:12,pointerEvents:"none"}}>{suffix}</span>}
+ {suffix&&<span style={{position:"absolute",right:12,top:"50%",transform:"translateY(-50%)",color:"var(--t3)",fontFamily:"'JetBrains Mono',monospace",fontSize:12,pointerEvents:"none"}}>{suffix}</span>}
  </div>
  </div>;
 };
 
 const Modal=({children,onClose,maxW=520,title,subtitle})=>(
  <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.8)",backdropFilter:"blur(5px)",zIndex:300,display:"flex",alignItems:"center",justifyContent:"center",padding:16}} onClick={e=>e.target===e.currentTarget&&onClose()}>
- <div className="si" style={{width:"100%",maxWidth:maxW,background:"var(--surface)",border:"1px solid var(--border)",borderRadius:18,overflow:"hidden",boxShadow:"0 30px 80px rgba(0,0,0,.6)"}}>
- {(title||subtitle)&&<div style={{padding:"18px 22px",borderBottom:"1px solid var(--border)",display:"flex",alignItems:"center",justifyContent:"space-between"}}><div>{title&&<div style={{fontSize:15,fontWeight:800}}>{title}</div>}{subtitle&&<div style={{fontSize:11,color:"var(--t3)",fontFamily:"'DM Mono',monospace",marginTop:2}}>{subtitle}</div>}</div><button onClick={onClose} style={{width:30,height:30,borderRadius:7,background:"var(--el)",border:"1px solid var(--border)",color:"var(--t2)",cursor:"pointer",fontSize:16,display:"flex",alignItems:"center",justifyContent:"center"}}>×</button></div>}
+ <div className="si" style={{width:"100%",maxWidth:maxW,background:"var(--surface)",border:"1px solid var(--border)",borderRadius:18,overflow:"hidden",boxShadow:"0 8px 40px rgba(15,31,26,.12),0 1px 3px rgba(15,31,26,.08)"}}>
+ {(title||subtitle)&&<div style={{padding:"18px 22px",borderBottom:"1px solid var(--border)",display:"flex",alignItems:"center",justifyContent:"space-between"}}><div>{title&&<div style={{fontSize:15,fontWeight:800}}>{title}</div>}{subtitle&&<div style={{fontSize:11,color:"var(--t3)",fontFamily:"'JetBrains Mono',monospace",marginTop:2}}>{subtitle}</div>}</div><button onClick={onClose} style={{width:30,height:30,borderRadius:7,background:"var(--el)",border:"1px solid var(--border)",color:"var(--t2)",cursor:"pointer",fontSize:16,display:"flex",alignItems:"center",justifyContent:"center"}}>×</button></div>}
  {children}
  </div>
  </div>
@@ -171,7 +171,7 @@ const PinPad=({onComplete})=>{
  <div style={{display:"flex",gap:12}}>{[0,1,2,3].map(i=><div key={i} style={{width:13,height:13,borderRadius:"50%",background:i<pin.length?"var(--amber)":"var(--border)",transition:"background .12s,transform .12s",transform:i<pin.length?"scale(1.2)":"scale(1)"}}/>)}</div>
  <div style={{display:"grid",gridTemplateColumns:"repeat(3,68px)",gap:8}}>
  {["1","2","3","4","5","6","7","8","9","C","0","⌫"].map(k=>(
- <button key={k} onClick={()=>hit(k)} style={{width:68,height:68,borderRadius:12,background:k==="⌫"||k==="C"?"var(--el)":"var(--surface)",border:"1px solid var(--border)",color:k==="⌫"?"var(--red)":k==="C"?"var(--t3)":"var(--t1)",fontSize:20,fontFamily:"'DM Mono',monospace",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",userSelect:"none"}}
+ <button key={k} onClick={()=>hit(k)} style={{width:68,height:68,borderRadius:12,background:k==="⌫"||k==="C"?"var(--el)":"var(--surface)",border:"1px solid var(--border)",color:k==="⌫"?"var(--red)":k==="C"?"var(--t3)":"var(--t1)",fontSize:20,fontFamily:"'JetBrains Mono',monospace",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",userSelect:"none"}}
  onMouseDown={e=>e.currentTarget.style.transform="scale(.92)"} onMouseUp={e=>e.currentTarget.style.transform="scale(1)"} onMouseLeave={e=>e.currentTarget.style.transform="scale(1)"}>
  {k}
  </button>
@@ -199,19 +199,19 @@ const LoginScreen=()=>{
  return <div style={{minHeight:"100vh",display:"flex",flexDirection:"column",background:"var(--bg)",overflow:"auto",position:"relative"}}>
  <div style={{position:"fixed",inset:0,pointerEvents:"none",backgroundImage:"linear-gradient(var(--border) 1px,transparent 1px),linear-gradient(90deg,var(--border) 1px,transparent 1px)",backgroundSize:"44px 44px",opacity:.3}}/>
  <div style={{padding:"24px 24px 0",display:"flex",alignItems:"center",gap:12,position:"relative",zIndex:1}}>
- <div style={{width:40,height:40,borderRadius:10,background:"var(--amber)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,fontWeight:900,color:"#0D0F0E"}}>G</div>
- <div><div style={{fontSize:16,fontWeight:800}}>GASTRO POS</div><div style={{fontSize:9,color:"var(--amber)",fontFamily:"'DM Mono',monospace",letterSpacing:".1em"}}>SISTEMA DE GESTIÓN v1.0</div></div>
+ <div style={{width:40,height:40,borderRadius:10,background:"var(--amber)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,fontWeight:900,color:"var(--bg)"}}>G</div>
+ <div><div style={{fontSize:16,fontWeight:800}}>GASTRO POS</div><div style={{fontSize:9,color:"var(--amber)",fontFamily:"'JetBrains Mono',monospace",letterSpacing:".1em"}}>SISTEMA DE GESTIÓN v1.0</div></div>
  <div style={{marginLeft:"auto",display:"flex",alignItems:"center",gap:6}}>
  <span style={{width:6,height:6,borderRadius:"50%",background:"var(--green)",animation:"pulse 2s infinite",display:"block"}}/>
- <span style={{fontSize:9,color:"var(--t3)",fontFamily:"'DM Mono',monospace"}}>{new Date().toLocaleDateString("es",{day:"numeric",month:"short"}).toUpperCase()}</span>
+ <span style={{fontSize:9,color:"var(--t3)",fontFamily:"'JetBrains Mono',monospace"}}>{new Date().toLocaleDateString("es",{day:"numeric",month:"short"}).toUpperCase()}</span>
  </div>
  </div>
  <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",padding:"24px",position:"relative",zIndex:1}}>
- <div style={{width:"100%",maxWidth:420,background:"var(--surface)",border:"1px solid var(--border)",borderRadius:20,padding:"32px 28px",boxShadow:"0 24px 60px rgba(0,0,0,.4)"}}>
+ <div style={{width:"100%",maxWidth:420,background:"var(--surface)",border:"1px solid var(--border)",borderRadius:20,padding:"32px 28px",boxShadow:"0 8px 32px rgba(15,31,26,.10),0 1px 2px rgba(15,31,26,.06)"}}>
  <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:24}}>
  {["Perfil","PIN"].map((s,i)=>{const idx=step==="users"?0:1;const done=i<idx,act=i===idx;return(
  <div key={i} style={{display:"flex",alignItems:"center",gap:8}}>
- <div style={{width:26,height:26,borderRadius:7,background:done?"var(--green)":act?"var(--amber)":"var(--el)",border:`1px solid ${done?"var(--green)":act?"var(--amber)":"var(--border)"}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:700,fontFamily:"'DM Mono',monospace",color:(done||act)?"#0D0F0E":"var(--t3)",transition:"all .2s"}}>{done?"":i+1}</div>
+ <div style={{width:26,height:26,borderRadius:7,background:done?"var(--green)":act?"var(--amber)":"var(--el)",border:`1px solid ${done?"var(--green)":act?"var(--amber)":"var(--border)"}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:700,fontFamily:"'JetBrains Mono',monospace",color:(done||act)?"var(--bg)":"var(--t3)",transition:"all .2s"}}>{done?"":i+1}</div>
  <span style={{fontSize:12,color:act?"var(--t1)":"var(--t3)",fontWeight:act?600:400}}>{s}</span>
  {i<1&&<div style={{width:20,height:1,background:"var(--border)",margin:"0 4px"}}/>}
  </div>
@@ -219,14 +219,14 @@ const LoginScreen=()=>{
  </div>
  {step==="users"?(
  <div className="fu" style={{display:"flex",flexDirection:"column",gap:10}}>
- <div style={{fontSize:11,color:"var(--t3)",fontFamily:"'DM Mono',monospace",letterSpacing:".1em",textTransform:"uppercase",marginBottom:6}}>Selecciona tu perfil</div>
+ <div style={{fontSize:11,color:"var(--t3)",fontFamily:"'JetBrains Mono',monospace",letterSpacing:".1em",textTransform:"uppercase",marginBottom:6}}>Selecciona tu perfil</div>
  {state.users.map((u,i)=>{const r=ROLES[u.role];return(
  <button key={u.id} onClick={()=>{setUser(u);setStep("pin");setErr("");setAt(0);}} className="fu"
  style={{display:"flex",alignItems:"center",gap:13,padding:"13px 16px",background:"transparent",border:"1px solid var(--border)",borderRadius:12,cursor:"pointer",textAlign:"left",width:"100%",transition:"all .14s",animationDelay:`${i*.05}s`,animationFillMode:"both"}}
  onMouseEnter={e=>{e.currentTarget.style.background="var(--el)";e.currentTarget.style.borderColor=`${r.color}40`;}}
  onMouseLeave={e=>{e.currentTarget.style.background="transparent";e.currentTarget.style.borderColor="var(--border)";}}>
  <div style={{width:42,height:42,borderRadius:11,flexShrink:0,background:`${r.color}18`,border:`1px solid ${r.color}35`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18}}>{r.icon}</div>
- <div style={{flex:1}}><div style={{fontSize:13,fontWeight:700,color:"var(--t1)"}}>{u.name}</div><div style={{fontSize:10,color:r.color,fontFamily:"'DM Mono',monospace",letterSpacing:".06em",textTransform:"uppercase",marginTop:2}}>{r.label}</div></div>
+ <div style={{flex:1}}><div style={{fontSize:13,fontWeight:700,color:"var(--t1)"}}>{u.name}</div><div style={{fontSize:10,color:r.color,fontFamily:"'JetBrains Mono',monospace",letterSpacing:".06em",textTransform:"uppercase",marginTop:2}}>{r.label}</div></div>
  <span style={{fontSize:18,color:"var(--t3)"}}></span>
  </button>
  );})}
@@ -236,10 +236,10 @@ const LoginScreen=()=>{
  {user&&(()=>{const r=ROLES[user.role];return(
  <div style={{display:"flex",alignItems:"center",gap:12,padding:"12px 18px",background:"var(--el)",border:`1px solid ${r.color}30`,borderRadius:12,width:"100%"}}>
  <div style={{width:42,height:42,borderRadius:10,background:`${r.color}18`,border:`1px solid ${r.color}40`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20}}>{r.icon}</div>
- <div><div style={{fontSize:14,fontWeight:700}}>{user.name}</div><div style={{fontSize:10,color:r.color,fontFamily:"'DM Mono',monospace",letterSpacing:".06em",textTransform:"uppercase",marginTop:2}}>{r.label}</div></div>
+ <div><div style={{fontSize:14,fontWeight:700}}>{user.name}</div><div style={{fontSize:10,color:r.color,fontFamily:"'JetBrains Mono',monospace",letterSpacing:".06em",textTransform:"uppercase",marginTop:2}}>{r.label}</div></div>
  </div>
  );})()}
- {err&&<div style={{padding:"9px 14px",background:locked?"var(--red-g)":"rgba(255,77,77,.07)",border:"1px solid rgba(255,77,77,.22)",borderRadius:9,width:"100%",fontSize:12,color:"var(--red)",fontFamily:"'DM Mono',monospace"}}>{locked?` ${err} (${lockT}s)`:` ${err}`}</div>}
+ {err&&<div style={{padding:"9px 14px",background:locked?"var(--red-g)":"rgba(255,77,77,.07)",border:"1px solid rgba(255,77,77,.22)",borderRadius:9,width:"100%",fontSize:12,color:"var(--red)",fontFamily:"'JetBrains Mono',monospace"}}>{locked?` ${err} (${lockT}s)`:` ${err}`}</div>}
  <PinPad onComplete={handlePin}/>
  <button onClick={()=>{setStep("users");setUser(null);setErr("");}} style={{background:"transparent",border:"none",color:"var(--t3)",fontSize:12,cursor:"pointer",padding:"6px 12px",borderRadius:7}} onMouseEnter={e=>e.currentTarget.style.color="var(--t2)"} onMouseLeave={e=>e.currentTarget.style.color="var(--t3)"}> Cambiar usuario</button>
  </div>
@@ -293,7 +293,7 @@ const TicketModal=({order,company,onClose})=>{
  };
  return <Modal onClose={onClose} title="Vista Previa del Ticket" maxW={360}>
  <div style={{padding:"16px 20px",maxHeight:440,overflowY:"auto"}}>
- <div style={{background:"#fff",borderRadius:9,padding:"18px 14px",fontFamily:"'DM Mono',monospace",fontSize:11,color:"#111",lineHeight:1.7,boxShadow:"0 4px 20px rgba(0,0,0,.15)"}}>
+ <div style={{background:"#fff",borderRadius:9,padding:"18px 14px",fontFamily:"'JetBrains Mono',monospace",fontSize:11,color:"#111",lineHeight:1.7,boxShadow:"0 4px 20px rgba(0,0,0,.15)"}}>
  <div style={{textAlign:"center",marginBottom:10}}>
  {company.logo?<img src={company.logo} style={{maxWidth:60,maxHeight:60,display:"block",margin:"0 auto 5px",borderRadius:6}} alt="logo"/>:<div style={{fontSize:20,fontWeight:900,letterSpacing:".1em"}}>{(company.name||"GP").slice(0,2).toUpperCase()}</div>}
  <div style={{fontWeight:700,fontSize:13}}>{company.name||"Mi Restaurante"}</div>
@@ -360,7 +360,7 @@ const VariantModal=({product,onClose,onConfirm})=>{
  onMouseEnter={e=>{if(sel!==v.name){e.currentTarget.style.background="var(--surface)";e.currentTarget.style.borderColor="var(--amber)";}}}
  onMouseLeave={e=>{if(sel!==v.name){e.currentTarget.style.background="var(--el)";e.currentTarget.style.borderColor="var(--border)";;}}}>
  <span style={{fontSize:13,fontWeight:600}}>{v.name}</span>
- <span style={{fontFamily:"'DM Mono',monospace",fontSize:12}}>{v.extra===0?fmt(product.price):v.extra>0?`+${fmt(v.extra)}`:fmt(v.extra)}</span>
+ <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:12}}>{v.extra===0?fmt(product.price):v.extra>0?`+${fmt(v.extra)}`:fmt(v.extra)}</span>
  </button>
  ))}
  </div>
@@ -382,7 +382,7 @@ const ChargeModal=({order,subtotal,discount,total,onClose,onCharge})=>{
  {[["Subtotal",fmt(subtotal)],["Descuento",`-${fmt(discAmt)}`],["TOTAL",fmt(total)]].map(([l,v],i)=>(
  <div key={i} style={{display:"flex",justifyContent:"space-between",padding:"9px 14px",borderBottom:i<2?"1px solid var(--border)":"none",background:i===2?"var(--amber-g)":"transparent"}}>
  <span style={{fontSize:i===2?13:11,fontWeight:i===2?800:400,color:i===2?"var(--amber)":"var(--t2)"}}>{l}</span>
- <span style={{fontFamily:"'DM Mono',monospace",fontSize:i===2?18:12,fontWeight:i===2?800:500,color:i===2?"var(--amber)":"var(--t1)"}}>{v}</span>
+ <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:i===2?18:12,fontWeight:i===2?800:500,color:i===2?"var(--amber)":"var(--t1)"}}>{v}</span>
  </div>
  ))}
  </div>
@@ -395,7 +395,7 @@ const ChargeModal=({order,subtotal,discount,total,onClose,onCharge})=>{
  ))}
  </div>
  {method==="efectivo"&&<FInput label="Efectivo recibido" value={cash} onChange={e=>setCash(e.target.value)} prefix="$" type="number" placeholder={String(Math.round(total))}/>}
- {change!==null&&<div style={{padding:"9px 14px",background:"var(--green-g)",border:"1px solid rgba(61,220,132,.25)",borderRadius:9,display:"flex",justifyContent:"space-between",alignItems:"center"}}><span style={{fontSize:12,color:"var(--t2)"}}>Vuelto</span><span style={{fontFamily:"'DM Mono',monospace",fontSize:18,fontWeight:700,color:"var(--green)"}}>{fmt(change)}</span></div>}
+ {change!==null&&<div style={{padding:"9px 14px",background:"var(--green-g)",border:"1px solid rgba(61,220,132,.25)",borderRadius:9,display:"flex",justifyContent:"space-between",alignItems:"center"}}><span style={{fontSize:12,color:"var(--t2)"}}>Vuelto</span><span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:18,fontWeight:700,color:"var(--green)"}}>{fmt(change)}</span></div>}
  </div>
  <div style={{padding:"12px 16px",borderTop:"1px solid var(--border)",display:"flex",gap:8,justifyContent:"flex-end"}}>
  <Btn v="ghost" onClick={onClose}>Cancelar</Btn>
@@ -467,13 +467,13 @@ const POSModule=()=>{
  <div style={{padding:"11px 9px",background:inOrder?"var(--amber-g)":"var(--surface)",border:`1px solid ${inOrder?"rgba(245,166,35,.35)":out?"rgba(255,77,77,.15)":"var(--border)"}`,borderRadius:11,textAlign:"left",opacity:out?.5:1,transition:"all .14s",position:"relative",height:"100%",display:"flex",flexDirection:"column",gap:4}}
  onMouseEnter={e=>{if(!out)e.currentTarget.style.borderColor=inOrder?"rgba(245,166,35,.5)":"var(--amber)";}}
  onMouseLeave={e=>{e.currentTarget.style.borderColor=inOrder?"rgba(245,166,35,.35)":out?"rgba(255,77,77,.15)":"var(--border)";}}>
- {inOrder&&<div style={{position:"absolute",top:5,right:5,width:18,height:18,borderRadius:"50%",background:"var(--amber)",color:"#0D0F0E",fontSize:9,fontWeight:800,fontFamily:"'DM Mono',monospace",display:"flex",alignItems:"center",justifyContent:"center"}}>{inOrder.qty}</div>}
+ {inOrder&&<div style={{position:"absolute",top:5,right:5,width:18,height:18,borderRadius:"50%",background:"var(--amber)",color:"var(--bg)",fontSize:9,fontWeight:800,fontFamily:"'JetBrains Mono',monospace",display:"flex",alignItems:"center",justifyContent:"center"}}>{inOrder.qty}</div>}
               <div style={{width:"100%",height:50,borderRadius:7,background:"var(--el)",marginBottom:4,display:"flex",alignItems:"center",justifyContent:"center",overflow:"hidden"}}>{p.image?<img src={p.image} style={{width:"100%",height:"100%",objectFit:"cover"}} alt={p.name}/>:<span style={{fontSize:20}}>{ct?.icon}</span>}</div>
  <div style={{fontSize:11,fontWeight:700,lineHeight:1.3,color:"var(--t1)"}}>{p.name}</div>
  <div style={{marginTop:"auto"}}>
- <div style={{fontSize:13,fontWeight:800,fontFamily:"'DM Mono',monospace",color:inOrder?"var(--amber)":"var(--t1)"}}>{fmt(p.price)}</div>
- {out?<Badge variant="danger">Agotado</Badge>:p.stock<=p.minStock?<Badge variant="warning">Bajo</Badge>:<span style={{fontSize:9,color:"var(--t3)",fontFamily:"'DM Mono',monospace"}}>Stock:{p.stock}</span>}
- {p.variants?.length>0&&<div style={{fontSize:9,color:"var(--blue)",marginTop:2,fontFamily:"'DM Mono',monospace"}}>{p.variants.length} opciones</div>}
+ <div style={{fontSize:13,fontWeight:800,fontFamily:"'JetBrains Mono',monospace",color:inOrder?"var(--amber)":"var(--t1)"}}>{fmt(p.price)}</div>
+ {out?<Badge variant="danger">Agotado</Badge>:p.stock<=p.minStock?<Badge variant="warning">Bajo</Badge>:<span style={{fontSize:9,color:"var(--t3)",fontFamily:"'JetBrains Mono',monospace"}}>Stock:{p.stock}</span>}
+ {p.variants?.length>0&&<div style={{fontSize:9,color:"var(--blue)",marginTop:2,fontFamily:"'JetBrains Mono',monospace"}}>{p.variants.length} opciones</div>}
  </div>
  </div>
  </button>;
@@ -493,16 +493,16 @@ const POSModule=()=>{
  </div>
  )}
  <div style={{fontSize:40,opacity:.2}}></div>
- <div style={{fontSize:11,color:"var(--t3)",fontFamily:"'DM Mono',monospace",textAlign:"center",lineHeight:1.6}}>Sin orden activa</div>
+ <div style={{fontSize:11,color:"var(--t3)",fontFamily:"'JetBrains Mono',monospace",textAlign:"center",lineHeight:1.6}}>Sin orden activa</div>
  <Btn v="primary" sz="lg" full icon="+" onClick={()=>setShowNOM(true)}>Nueva Orden</Btn>
- {state.orders.length>0&&<div style={{fontSize:10,color:"var(--t3)",fontFamily:"'DM Mono',monospace"}}>{state.orders.length} orden(es) hoy</div>}
+ {state.orders.length>0&&<div style={{fontSize:10,color:"var(--t3)",fontFamily:"'JetBrains Mono',monospace"}}>{state.orders.length} orden(es) hoy</div>}
  </div>
  ):(
  <>
  <div style={{padding:"11px 13px",borderBottom:"1px solid var(--border)",display:"flex",alignItems:"center",justifyContent:"space-between",flexShrink:0}}>
  <div>
  <div style={{fontSize:13,fontWeight:800}}>{activeOrder.id}</div>
- <div style={{fontSize:10,color:"var(--t2)",fontFamily:"'DM Mono',monospace",marginTop:1}}>{activeOrder.type==="mesa"?`Mesa ${activeOrder.table}`:activeOrder.type==="llevar"?"Llevar":"Delivery"}</div>
+ <div style={{fontSize:10,color:"var(--t2)",fontFamily:"'JetBrains Mono',monospace",marginTop:1}}>{activeOrder.type==="mesa"?`Mesa ${activeOrder.table}`:activeOrder.type==="llevar"?"Llevar":"Delivery"}</div>
  </div>
  <div style={{display:"flex",gap:5}}>
  <Btn v="amber" sz="sm" onClick={()=>setShowNOM(true)}>+</Btn>
@@ -511,20 +511,20 @@ const POSModule=()=>{
  </div>
  <div style={{flex:1,overflowY:"auto",padding:"4px 8px"}}>
  {activeOrder.items.length===0
- ?<div style={{padding:"20px 10px",textAlign:"center",color:"var(--t3)",fontSize:11,fontFamily:"'DM Mono',monospace"}}>Añade productos del catálogo</div>
+ ?<div style={{padding:"20px 10px",textAlign:"center",color:"var(--t3)",fontSize:11,fontFamily:"'JetBrains Mono',monospace"}}>Añade productos del catálogo</div>
  :activeOrder.items.map((item,i)=>(
  <div key={item.key} className="fu" style={{display:"flex",alignItems:"center",gap:7,padding:"8px 4px",borderBottom:"1px solid var(--border)",animationDelay:`${i*.03}s`,animationFillMode:"both"}}>
  <div style={{flex:1,minWidth:0}}>
  <div style={{fontSize:11,fontWeight:600,lineHeight:1.3}}>{item.name}</div>
- {item.variantLabel&&<div style={{fontSize:9,color:"var(--amber)",fontFamily:"'DM Mono',monospace"}}>{item.variantLabel}</div>}
- <div style={{fontSize:10,color:"var(--t2)",fontFamily:"'DM Mono',monospace"}}>{fmt(item.price)}/u</div>
+ {item.variantLabel&&<div style={{fontSize:9,color:"var(--amber)",fontFamily:"'JetBrains Mono',monospace"}}>{item.variantLabel}</div>}
+ <div style={{fontSize:10,color:"var(--t2)",fontFamily:"'JetBrains Mono',monospace"}}>{fmt(item.price)}/u</div>
  </div>
  <div style={{display:"flex",alignItems:"center",gap:2,flexShrink:0}}>
  <button onClick={()=>dispatch({type:"REMOVE_ITEM",key:item.key})} style={{width:22,height:22,borderRadius:5,background:"var(--el)",border:"1px solid var(--border)",color:"var(--t2)",cursor:"pointer",fontSize:12,display:"flex",alignItems:"center",justifyContent:"center"}}>−</button>
- <span style={{width:20,textAlign:"center",fontFamily:"'DM Mono',monospace",fontSize:12,fontWeight:700}}>{item.qty}</span>
+ <span style={{width:20,textAlign:"center",fontFamily:"'JetBrains Mono',monospace",fontSize:12,fontWeight:700}}>{item.qty}</span>
  <button onClick={()=>dispatch({type:"ADD_ITEM",item:{...item,qty:undefined}})} style={{width:22,height:22,borderRadius:5,background:"var(--el)",border:"1px solid var(--border)",color:"var(--amber)",cursor:"pointer",fontSize:12,display:"flex",alignItems:"center",justifyContent:"center"}}>+</button>
  </div>
- <div style={{fontFamily:"'DM Mono',monospace",fontSize:11,fontWeight:600,minWidth:44,textAlign:"right"}}>{fmt(item.price*item.qty)}</div>
+ <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:11,fontWeight:600,minWidth:44,textAlign:"right"}}>{fmt(item.price*item.qty)}</div>
  </div>
  ))
  }
@@ -538,15 +538,15 @@ const POSModule=()=>{
  <div style={{padding:"5px 10px",borderTop:"1px solid var(--border)",display:"flex",alignItems:"center",gap:5,flexShrink:0}}>
  <span style={{fontSize:11,color:"var(--t2)",flex:1}}>Desc.</span>
  {[0,5,10,15,20].map(d=>(
- <button key={d} onClick={()=>setDiscount(d)} style={{padding:"3px 6px",borderRadius:5,cursor:"pointer",background:discount===d?"var(--amber-g)":"var(--el)",border:`1px solid ${discount===d?"rgba(245,166,35,.3)":"var(--border)"}`,color:discount===d?"var(--amber)":"var(--t3)",fontSize:10,fontWeight:600,fontFamily:"'DM Mono',monospace"}}>{d}%</button>
+ <button key={d} onClick={()=>setDiscount(d)} style={{padding:"3px 6px",borderRadius:5,cursor:"pointer",background:discount===d?"var(--amber-g)":"var(--el)",border:`1px solid ${discount===d?"rgba(245,166,35,.3)":"var(--border)"}`,color:discount===d?"var(--amber)":"var(--t3)",fontSize:10,fontWeight:600,fontFamily:"'JetBrains Mono',monospace"}}>{d}%</button>
  ))}
  </div>
  )}
  <div style={{padding:"11px 13px",borderTop:"1px solid var(--border)",flexShrink:0}}>
- {discount>0&&<div style={{display:"flex",justifyContent:"space-between",marginBottom:6,padding:"4px 8px",background:"var(--amber-g)",borderRadius:5}}><span style={{fontSize:10,color:"var(--t2)"}}>Desc. {discount}%</span><span style={{fontFamily:"'DM Mono',monospace",fontSize:10,color:"var(--amber)"}}>-{fmt(discAmt)}</span></div>}
+ {discount>0&&<div style={{display:"flex",justifyContent:"space-between",marginBottom:6,padding:"4px 8px",background:"var(--amber-g)",borderRadius:5}}><span style={{fontSize:10,color:"var(--t2)"}}>Desc. {discount}%</span><span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,color:"var(--amber)"}}>-{fmt(discAmt)}</span></div>}
  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
  <span style={{fontSize:12,color:"var(--t2)"}}>TOTAL</span>
- <span style={{fontFamily:"'DM Mono',monospace",fontSize:20,fontWeight:800,color:"var(--amber)"}}>{fmt(total)}</span>
+ <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:20,fontWeight:800,color:"var(--amber)"}}>{fmt(total)}</span>
  </div>
  <Btn v="success" sz="lg" full disabled={activeOrder.items.length===0} onClick={()=>setShowCM(true)} icon="">Cobrar {fmt(total)}</Btn>
  </div>
@@ -641,11 +641,11 @@ const StockModal=({product,onClose})=>{
  ))}
  </div>
  <input type="number" min="1" value={qty} onChange={e=>setQty(e.target.value)} placeholder="Cantidad"
- style={{width:"100%",padding:"10px",textAlign:"center",background:"var(--el)",border:"1px solid var(--border)",borderRadius:8,color:"var(--t1)",fontSize:20,fontFamily:"'DM Mono',monospace",outline:"none"}}
+ style={{width:"100%",padding:"10px",textAlign:"center",background:"var(--el)",border:"1px solid var(--border)",borderRadius:8,color:"var(--t1)",fontSize:20,fontFamily:"'JetBrains Mono',monospace",outline:"none"}}
  onFocus={e=>e.target.style.borderColor="var(--amber)"} onBlur={e=>e.target.style.borderColor="var(--border)"}/>
  {qty&&<div style={{display:"flex",justifyContent:"space-between",padding:"8px 12px",background:"var(--el)",border:"1px solid var(--border)",borderRadius:8}}>
- <div><div style={{fontSize:9,color:"var(--t3)",fontFamily:"'DM Mono',monospace",textTransform:"uppercase"}}>RESULTADO</div><div style={{fontSize:18,fontWeight:700,fontFamily:"'DM Mono',monospace",color:Math.max(0,prev)<=product.minStock?"var(--amber)":"var(--green)"}}>{Math.max(0,prev)}</div></div>
- <div style={{textAlign:"right"}}><div style={{fontSize:9,color:"var(--t3)",fontFamily:"'DM Mono',monospace",textTransform:"uppercase"}}>ANTES</div><div style={{fontSize:14,fontFamily:"'DM Mono',monospace",color:"var(--t2)"}}>{product.stock}</div></div>
+ <div><div style={{fontSize:9,color:"var(--t3)",fontFamily:"'JetBrains Mono',monospace",textTransform:"uppercase"}}>RESULTADO</div><div style={{fontSize:18,fontWeight:700,fontFamily:"'JetBrains Mono',monospace",color:Math.max(0,prev)<=product.minStock?"var(--amber)":"var(--green)"}}>{Math.max(0,prev)}</div></div>
+ <div style={{textAlign:"right"}}><div style={{fontSize:9,color:"var(--t3)",fontFamily:"'JetBrains Mono',monospace",textTransform:"uppercase"}}>ANTES</div><div style={{fontSize:14,fontFamily:"'JetBrains Mono',monospace",color:"var(--t2)"}}>{product.stock}</div></div>
  </div>}
  </div>
  <div style={{padding:"11px 16px",borderTop:"1px solid var(--border)",display:"flex",gap:8,justifyContent:"flex-end"}}>
@@ -661,7 +661,7 @@ const ConfirmDeleteModal=({product,onClose,onConfirm})=>(
   <div style={{padding:"16px 20px",display:"flex",flexDirection:"column",gap:14}}>
    <div style={{display:"flex",gap:12,alignItems:"center",padding:"12px 14px",background:"var(--red-g)",border:"1px solid rgba(255,77,77,.25)",borderRadius:10}}>
     <span style={{fontSize:24}}>🗑️</span>
-    <div><div style={{fontSize:13,fontWeight:700,color:"var(--red)"}}>{product.name}</div><div style={{fontSize:10,color:"var(--t2)",fontFamily:"'DM Mono',monospace",marginTop:2}}>{product.sku} · Stock: {product.stock}</div></div>
+    <div><div style={{fontSize:13,fontWeight:700,color:"var(--red)"}}>{product.name}</div><div style={{fontSize:10,color:"var(--t2)",fontFamily:"'JetBrains Mono',monospace",marginTop:2}}>{product.sku} · Stock: {product.stock}</div></div>
    </div>
    <p style={{fontSize:12,color:"var(--t2)",lineHeight:1.6}}>Esta acción es <strong style={{color:"var(--t1)"}}>irreversible</strong>. El producto será eliminado del inventario y no estará disponible en el POS.</p>
   </div>
@@ -683,12 +683,12 @@ const InventoryModule=()=>{
  return <div style={{height:"100%",display:"flex",flexDirection:"column",overflow:"hidden"}}>
  <div style={{padding:"14px 18px 0",flexShrink:0}}>
  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
- <div><h2 style={{fontSize:18,fontWeight:800}}>Inventario</h2><p style={{fontSize:11,color:"var(--t2)",marginTop:1}}>Valor: <span style={{color:"var(--amber)",fontFamily:"'DM Mono',monospace"}}>{fmt(stats.value)}</span></p></div>
+ <div><h2 style={{fontSize:18,fontWeight:800}}>Inventario</h2><p style={{fontSize:11,color:"var(--t2)",marginTop:1}}>Valor: <span style={{color:"var(--amber)",fontFamily:"'JetBrains Mono',monospace"}}>{fmt(stats.value)}</span></p></div>
  <Btn v="primary" icon="+" sz="sm" onClick={()=>setShowNew(true)}>Nuevo</Btn>
  </div>
  <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,marginBottom:10}}>
  {[["Total",stats.total,"var(--t1)"],["Stock bajo",stats.low,"var(--amber)"],["Agotados",stats.out,"var(--red)"]].map(([l,v,c],i)=>(
- <div key={i} style={{padding:"10px 12px",background:"var(--surface)",border:"1px solid var(--border)",borderRadius:9}}><div style={{fontSize:9,color:"var(--t3)",fontFamily:"'DM Mono',monospace",textTransform:"uppercase",marginBottom:3}}>{l}</div><div style={{fontSize:20,fontWeight:800,fontFamily:"'DM Mono',monospace",color:c}}>{v}</div></div>
+ <div key={i} style={{padding:"10px 12px",background:"var(--surface)",border:"1px solid var(--border)",borderRadius:9}}><div style={{fontSize:9,color:"var(--t3)",fontFamily:"'JetBrains Mono',monospace",textTransform:"uppercase",marginBottom:3}}>{l}</div><div style={{fontSize:20,fontWeight:800,fontFamily:"'JetBrains Mono',monospace",color:c}}>{v}</div></div>
  ))}
  </div>
  <div style={{display:"flex",gap:5,overflowX:"auto",flexWrap:"nowrap",marginBottom:8}}>
@@ -708,12 +708,12 @@ const InventoryModule=()=>{
  <div style={{width:34,height:34,borderRadius:8,flexShrink:0,background:"var(--el)",border:"1px solid var(--border)",display:"flex",alignItems:"center",justifyContent:"center",overflow:"hidden"}}>
                 {p.image?<img src={p.image} style={{width:"100%",height:"100%",objectFit:"cover"}} alt={p.name}/>:<span style={{fontSize:15,color:ct?.color||"var(--t3)"}}>{ct?.icon}</span>}
               </div>
- <div style={{flex:1,minWidth:0}}><div style={{fontSize:12,fontWeight:600,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.name}</div><div style={{fontSize:9,color:"var(--t3)",fontFamily:"'DM Mono',monospace"}}>{p.sku} · {ct?.label}{mg>0?` · ${mg}% mg`:""}</div></div>
- <div style={{textAlign:"right",marginRight:4,flexShrink:0}}><div style={{fontSize:13,fontWeight:700,fontFamily:"'DM Mono',monospace",color:"var(--amber)"}}>{fmt(p.price)}</div></div>
+ <div style={{flex:1,minWidth:0}}><div style={{fontSize:12,fontWeight:600,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.name}</div><div style={{fontSize:9,color:"var(--t3)",fontFamily:"'JetBrains Mono',monospace"}}>{p.sku} · {ct?.label}{mg>0?` · ${mg}% mg`:""}</div></div>
+ <div style={{textAlign:"right",marginRight:4,flexShrink:0}}><div style={{fontSize:13,fontWeight:700,fontFamily:"'JetBrains Mono',monospace",color:"var(--amber)"}}>{fmt(p.price)}</div></div>
  <div style={{flexShrink:0}}>
  <div style={{display:"flex",alignItems:"center",gap:5}}>
  <div style={{width:44,height:4,background:"var(--border)",borderRadius:2,overflow:"hidden"}}><div style={{width:`${Math.min((p.stock/(p.minStock*4||20))*100,100)}%`,height:"100%",background:s.color,borderRadius:2}}/></div>
- <span style={{fontSize:11,fontFamily:"'DM Mono',monospace",color:s.color,minWidth:20}}>{p.stock}</span>
+ <span style={{fontSize:11,fontFamily:"'JetBrains Mono',monospace",color:s.color,minWidth:20}}>{p.stock}</span>
  </div>
  <div style={{marginTop:3}}><Badge variant={s.v}>{s.label}</Badge></div>
  </div>
@@ -721,7 +721,7 @@ const InventoryModule=()=>{
  <button onClick={()=>setDeleteProd(p)} title="Eliminar producto" style={{width:26,height:26,borderRadius:6,background:"var(--red-g)",border:"1px solid rgba(255,77,77,.2)",color:"var(--red)",cursor:"pointer",fontSize:12,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,marginLeft:4}}>🗑</button>
  </div>
  );})}
- {filtered.length===0&&<div style={{padding:"40px 20px",textAlign:"center",color:"var(--t3)"}}><div style={{fontSize:32,marginBottom:8}}></div><div style={{fontSize:11,fontFamily:"'DM Mono',monospace"}}>Sin productos</div></div>}
+ {filtered.length===0&&<div style={{padding:"40px 20px",textAlign:"center",color:"var(--t3)"}}><div style={{fontSize:32,marginBottom:8}}></div><div style={{fontSize:11,fontFamily:"'JetBrains Mono',monospace"}}>Sin productos</div></div>}
  </div>
  {showNew&&<NewProductModal onClose={()=>setShowNew(false)}/>}
  {stockProd&&<StockModal product={stockProd} onClose={()=>setStockProd(null)}/> }
@@ -735,7 +735,7 @@ const NewClientModal=({onClose})=>{
  const {dispatch}=useStore();
  const [form,setForm]=useState({name:"",contact:"",phone:"",creditLimit:"500"});
  const set=(k,v)=>setForm(p=>({...p,[k]:v}));
- const ls={fontSize:10,color:"var(--t3)",fontFamily:"'DM Mono',monospace",letterSpacing:".08em",textTransform:"uppercase",fontWeight:600,display:"block",marginBottom:5};
+ const ls={fontSize:10,color:"var(--t3)",fontFamily:"'JetBrains Mono',monospace",letterSpacing:".08em",textTransform:"uppercase",fontWeight:600,display:"block",marginBottom:5};
  const is={width:"100%",padding:"10px 14px",minHeight:42,background:"var(--el)",border:"1px solid var(--border)",borderRadius:9,color:"var(--t1)",fontSize:13,outline:"none"};
  return <Modal onClose={onClose} title="Nuevo Cliente" maxW={400}>
  <div style={{padding:18,display:"flex",flexDirection:"column",gap:12}}>
@@ -745,7 +745,7 @@ const NewClientModal=({onClose})=>{
  <div><label style={ls}>Teléfono</label><input value={form.phone} onChange={e=>set("phone",e.target.value)} placeholder="555-0000" style={is} onFocus={e=>e.target.style.borderColor="var(--amber)"} onBlur={e=>e.target.style.borderColor="var(--border)"}/></div>
  </div>
  <div><label style={ls}>Límite de crédito</label>
- <div style={{position:"relative"}}><span style={{position:"absolute",left:11,top:"50%",transform:"translateY(-50%)",color:"var(--t3)",fontFamily:"'DM Mono',monospace",fontSize:13,pointerEvents:"none"}}>$</span>
+ <div style={{position:"relative"}}><span style={{position:"absolute",left:11,top:"50%",transform:"translateY(-50%)",color:"var(--t3)",fontFamily:"'JetBrains Mono',monospace",fontSize:13,pointerEvents:"none"}}>$</span>
  <input type="number" value={form.creditLimit} onChange={e=>set("creditLimit",e.target.value)} style={{...is,paddingLeft:26}} onFocus={e=>e.target.style.borderColor="var(--amber)"} onBlur={e=>e.target.style.borderColor="var(--border)"}/>
  </div>
  </div>
@@ -769,13 +769,13 @@ const TxModal=({client,txType,onClose})=>{
  <div style={{padding:16,display:"flex",flexDirection:"column",gap:12}}>
  <div style={{padding:"9px 12px",background:isChrg?"var(--amber-g)":"var(--green-g)",border:`1px solid ${isChrg?"rgba(245,166,35,.3)":"rgba(61,220,132,.3)"}`,borderRadius:8,display:"flex",alignItems:"center",gap:8}}>
  <span style={{fontSize:18}}>{isChrg?"":""}</span>
- <div><div style={{fontSize:12,fontWeight:700,color:isChrg?"var(--amber)":"var(--green)"}}>{isChrg?"Registrar cargo":"Registrar pago"}</div><div style={{fontSize:10,color:"var(--t2)",fontFamily:"'DM Mono',monospace"}}>Saldo actual: {fmt(client.balance)}</div></div>
+ <div><div style={{fontSize:12,fontWeight:700,color:isChrg?"var(--amber)":"var(--green)"}}>{isChrg?"Registrar cargo":"Registrar pago"}</div><div style={{fontSize:10,color:"var(--t2)",fontFamily:"'JetBrains Mono',monospace"}}>Saldo actual: {fmt(client.balance)}</div></div>
  </div>
  <FInput label="Monto *" value={amount} type="number" prefix="$" onChange={e=>setAmount(e.target.value)} placeholder="0.00"/>
  {over&&<div style={{padding:"7px 11px",background:"var(--red-g)",border:"1px solid rgba(255,77,77,.3)",borderRadius:7,fontSize:11,color:"var(--red)"}}> Excede el límite de crédito</div>}
  {amt>0&&!over&&<div style={{display:"flex",justifyContent:"space-between",padding:"7px 11px",background:"var(--el)",border:"1px solid var(--border)",borderRadius:7}}>
  <span style={{fontSize:11,color:"var(--t2)"}}>Nuevo saldo</span>
- <span style={{fontFamily:"'DM Mono',monospace",fontSize:13,fontWeight:700,color:isChrg?"var(--amber)":"var(--green)"}}>{fmt(newBal)}</span>
+ <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:13,fontWeight:700,color:isChrg?"var(--amber)":"var(--green)"}}>{fmt(newBal)}</span>
  </div>}
  <FInput label="Nota" value={note} onChange={e=>setNote(e.target.value)} placeholder="Descripción..."/>
  </div>
@@ -799,13 +799,13 @@ const ClientDetail=({client,onClose})=>{
  </div>
  <div style={{padding:"10px 12px",background:"var(--el)",border:"1px solid var(--border)",borderRadius:9,marginBottom:8}}>
  <div style={{display:"flex",justifyContent:"space-between",marginBottom:8}}>
- <div><div style={{fontSize:9,color:"var(--t3)",fontFamily:"'DM Mono',monospace",textTransform:"uppercase",marginBottom:2}}>Saldo</div><div style={{fontSize:22,fontWeight:800,fontFamily:"'DM Mono',monospace",color:client.balance>0?"var(--red)":"var(--green)"}}>{fmt(client.balance)}</div></div>
- <div style={{textAlign:"right"}}><div style={{fontSize:9,color:"var(--t3)",fontFamily:"'DM Mono',monospace",textTransform:"uppercase",marginBottom:2}}>Límite</div><div style={{fontSize:15,fontFamily:"'DM Mono',monospace",color:"var(--t2)",fontWeight:700}}>{fmt(client.creditLimit)}</div></div>
+ <div><div style={{fontSize:9,color:"var(--t3)",fontFamily:"'JetBrains Mono',monospace",textTransform:"uppercase",marginBottom:2}}>Saldo</div><div style={{fontSize:22,fontWeight:800,fontFamily:"'JetBrains Mono',monospace",color:client.balance>0?"var(--red)":"var(--green)"}}>{fmt(client.balance)}</div></div>
+ <div style={{textAlign:"right"}}><div style={{fontSize:9,color:"var(--t3)",fontFamily:"'JetBrains Mono',monospace",textTransform:"uppercase",marginBottom:2}}>Límite</div><div style={{fontSize:15,fontFamily:"'JetBrains Mono',monospace",color:"var(--t2)",fontWeight:700}}>{fmt(client.creditLimit)}</div></div>
  </div>
  <div style={{height:4,background:"var(--border)",borderRadius:2,overflow:"hidden"}}><div style={{width:`${used}%`,height:"100%",background:r.c,borderRadius:2,transition:"width .4s"}}/></div>
  <div style={{marginTop:4,display:"flex",justifyContent:"space-between"}}>
- <span style={{fontSize:9,color:r.c,fontFamily:"'DM Mono',monospace"}}>{used}% usado</span>
- <span style={{fontSize:9,color:"var(--t3)",fontFamily:"'DM Mono',monospace"}}>Disponible: {fmt(Math.max(0,client.creditLimit-client.balance))}</span>
+ <span style={{fontSize:9,color:r.c,fontFamily:"'JetBrains Mono',monospace"}}>{used}% usado</span>
+ <span style={{fontSize:9,color:"var(--t3)",fontFamily:"'JetBrains Mono',monospace"}}>Disponible: {fmt(Math.max(0,client.creditLimit-client.balance))}</span>
  </div>
  </div>
  <div style={{display:"flex",gap:6}}>
@@ -815,13 +815,13 @@ const ClientDetail=({client,onClose})=>{
  </div>
  <div style={{flex:1,overflowY:"auto"}}>
  {client.transactions.length===0
- ?<div style={{padding:"24px 14px",textAlign:"center",color:"var(--t3)",fontSize:11,fontFamily:"'DM Mono',monospace"}}>Sin movimientos</div>
+ ?<div style={{padding:"24px 14px",textAlign:"center",color:"var(--t3)",fontSize:11,fontFamily:"'JetBrains Mono',monospace"}}>Sin movimientos</div>
  :client.transactions.slice().reverse().map((tx,i)=>(
  <div key={tx.id||i} style={{display:"flex",alignItems:"center",gap:9,padding:"9px 14px",borderBottom:"1px solid var(--border)"}}
  onMouseEnter={e=>e.currentTarget.style.background="var(--el)"} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
  <div style={{width:26,height:26,borderRadius:7,flexShrink:0,background:tx.type==="charge"?"var(--amber-g)":"var(--green-g)",border:`1px solid ${tx.type==="charge"?"rgba(245,166,35,.25)":"rgba(61,220,132,.25)"}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12}}>{tx.type==="charge"?"":""}</div>
- <div style={{flex:1,minWidth:0}}><div style={{fontSize:11,fontWeight:600}}>{tx.note||tx.ref||tx.type}</div><div style={{fontSize:9,color:"var(--t3)",fontFamily:"'DM Mono',monospace",marginTop:1}}>{tx.date?new Date(tx.date).toLocaleDateString("es",{day:"numeric",month:"short"}):"—"}</div></div>
- <div style={{textAlign:"right",flexShrink:0}}><div style={{fontFamily:"'DM Mono',monospace",fontSize:11,fontWeight:700,color:tx.type==="charge"?"var(--amber)":"var(--green)"}}>{tx.type==="charge"?"+":"-"}{fmt(tx.amount)}</div></div>
+ <div style={{flex:1,minWidth:0}}><div style={{fontSize:11,fontWeight:600}}>{tx.note||tx.ref||tx.type}</div><div style={{fontSize:9,color:"var(--t3)",fontFamily:"'JetBrains Mono',monospace",marginTop:1}}>{tx.date?new Date(tx.date).toLocaleDateString("es",{day:"numeric",month:"short"}):"—"}</div></div>
+ <div style={{textAlign:"right",flexShrink:0}}><div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:11,fontWeight:700,color:tx.type==="charge"?"var(--amber)":"var(--green)"}}>{tx.type==="charge"?"+":"-"}{fmt(tx.amount)}</div></div>
  </div>
  ))
  }
@@ -843,7 +843,7 @@ const CreditsModule=()=>{
  return <div style={{height:"100%",display:"flex",flexDirection:"column",overflow:"hidden"}}>
  <div style={{padding:"14px 18px 10px",borderBottom:"1px solid var(--border)",flexShrink:0}}>
  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
- <div><h2 style={{fontSize:18,fontWeight:800}}>Créditos</h2><p style={{fontSize:11,color:"var(--t2)",marginTop:1}}>Cartera: <span style={{color:"var(--amber)",fontFamily:"'DM Mono',monospace"}}>{fmt(totalDebt)}</span></p></div>
+ <div><h2 style={{fontSize:18,fontWeight:800}}>Créditos</h2><p style={{fontSize:11,color:"var(--t2)",marginTop:1}}>Cartera: <span style={{color:"var(--amber)",fontFamily:"'JetBrains Mono',monospace"}}>{fmt(totalDebt)}</span></p></div>
  <Btn v="primary" icon="+" sz="sm" onClick={()=>setShowNew(true)}>Nuevo</Btn>
  </div>
  <div style={{position:"relative"}}>
@@ -862,12 +862,12 @@ const CreditsModule=()=>{
  onMouseLeave={e=>{if(selected!==c.id){e.currentTarget.style.background="var(--surface)";e.currentTarget.style.borderColor="var(--border)";}}}>
  <div style={{display:"flex",justifyContent:"space-between",marginBottom:7}}>
  <div style={{flex:1,minWidth:0}}><div style={{fontSize:13,fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",color:selected===c.id?"var(--amber)":"var(--t1)"}}>{c.name}</div><div style={{fontSize:11,color:"var(--t2)",marginTop:1}}>{c.contact}</div></div>
- <span style={{padding:"2px 7px",borderRadius:5,background:r.bg,color:r.c,fontSize:9,fontWeight:600,letterSpacing:".05em",textTransform:"uppercase",fontFamily:"'DM Mono',monospace",marginLeft:8,flexShrink:0,alignSelf:"flex-start"}}>{c.riskLevel}</span>
+ <span style={{padding:"2px 7px",borderRadius:5,background:r.bg,color:r.c,fontSize:9,fontWeight:600,letterSpacing:".05em",textTransform:"uppercase",fontFamily:"'JetBrains Mono',monospace",marginLeft:8,flexShrink:0,alignSelf:"flex-start"}}>{c.riskLevel}</span>
  </div>
  <div style={{height:4,background:"var(--border)",borderRadius:2,overflow:"hidden",marginBottom:6}}><div style={{width:`${used}%`,height:"100%",background:r.c,borderRadius:2}}/></div>
  <div style={{display:"flex",justifyContent:"space-between"}}>
- <div><div style={{fontSize:9,color:"var(--t3)",fontFamily:"'DM Mono',monospace",textTransform:"uppercase",marginBottom:1}}>Saldo</div><div style={{fontSize:14,fontWeight:800,fontFamily:"'DM Mono',monospace",color:c.balance===0?"var(--green)":c.balance>=c.creditLimit?"var(--red)":"var(--amber)"}}>{fmt(c.balance)}</div></div>
- <div style={{textAlign:"right"}}><div style={{fontSize:9,color:"var(--t3)",fontFamily:"'DM Mono',monospace",textTransform:"uppercase",marginBottom:1}}>Disponible</div><div style={{fontSize:12,fontWeight:600,fontFamily:"'DM Mono',monospace",color:"var(--t2)"}}>{fmt(Math.max(0,c.creditLimit-c.balance))}</div></div>
+ <div><div style={{fontSize:9,color:"var(--t3)",fontFamily:"'JetBrains Mono',monospace",textTransform:"uppercase",marginBottom:1}}>Saldo</div><div style={{fontSize:14,fontWeight:800,fontFamily:"'JetBrains Mono',monospace",color:c.balance===0?"var(--green)":c.balance>=c.creditLimit?"var(--red)":"var(--amber)"}}>{fmt(c.balance)}</div></div>
+ <div style={{textAlign:"right"}}><div style={{fontSize:9,color:"var(--t3)",fontFamily:"'JetBrains Mono',monospace",textTransform:"uppercase",marginBottom:1}}>Disponible</div><div style={{fontSize:12,fontWeight:600,fontFamily:"'JetBrains Mono',monospace",color:"var(--t2)"}}>{fmt(Math.max(0,c.creditLimit-c.balance))}</div></div>
  </div>
  </div>
  );})}
@@ -895,7 +895,7 @@ const ReportsModule=()=>{
 
  if(orders.length===0) return <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:14,opacity:.4,padding:40}}>
  <div style={{fontSize:48}}></div>
- <div style={{fontFamily:"'DM Mono',monospace",fontSize:12,color:"var(--t3)",textAlign:"center"}}>Sin ventas aún.<br/>Completa órdenes en el POS para ver reportes.</div>
+ <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:12,color:"var(--t3)",textAlign:"center"}}>Sin ventas aún.<br/>Completa órdenes en el POS para ver reportes.</div>
  </div>;
 
  return <div style={{padding:16,display:"flex",flexDirection:"column",gap:14,overflowY:"auto",height:"100%"}}>
@@ -903,8 +903,8 @@ const ReportsModule=()=>{
  <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(130px,1fr))",gap:9}}>
  {[["Ingresos",fmt(metrics.revenue),"","var(--amber)"],["Costo",fmt(metrics.cost),"","var(--red)"],["Ganancia",fmt(metrics.profit),"","var(--green)"],["Margen",`${metrics.margin.toFixed(1)}%`,"%",metrics.margin>=60?"var(--green)":metrics.margin>=40?"var(--amber)":"var(--red)"],["Órdenes",metrics.count,"","var(--blue)"],["Ticket prom.",fmt(metrics.avgTicket),"","var(--purple)"]].map(([l,v,ic,c],i)=>(
  <div key={i} className="fu" style={{padding:"12px 14px",background:"var(--surface)",border:"1px solid var(--border)",borderRadius:11,animationDelay:`${i*.04}s`,animationFillMode:"both"}}>
- <div style={{fontSize:9,color:"var(--t3)",fontFamily:"'DM Mono',monospace",letterSpacing:".08em",textTransform:"uppercase",marginBottom:5}}>{l}</div>
- <div style={{fontSize:20,fontWeight:800,fontFamily:"'DM Mono',monospace",color:c}}>{v}</div>
+ <div style={{fontSize:9,color:"var(--t3)",fontFamily:"'JetBrains Mono',monospace",letterSpacing:".08em",textTransform:"uppercase",marginBottom:5}}>{l}</div>
+ <div style={{fontSize:20,fontWeight:800,fontFamily:"'JetBrains Mono',monospace",color:c}}>{v}</div>
  </div>
  ))}
  </div>
@@ -913,17 +913,17 @@ const ReportsModule=()=>{
  <div style={{fontSize:12,fontWeight:700,marginBottom:10}}>Métodos de Pago</div>
  {Object.entries(metrics.byMethod).map(([m,v],i)=>{const t=metrics.revenue||1;return(
  <div key={i} style={{marginBottom:9}}>
- <div style={{display:"flex",justifyContent:"space-between",marginBottom:3}}><span style={{fontSize:11,color:"var(--t2)",textTransform:"capitalize"}}>{m}</span><span style={{fontFamily:"'DM Mono',monospace",fontSize:11,fontWeight:700,color:["var(--green)","var(--blue)","var(--purple)"][i]}}>{fmt(v)}</span></div>
+ <div style={{display:"flex",justifyContent:"space-between",marginBottom:3}}><span style={{fontSize:11,color:"var(--t2)",textTransform:"capitalize"}}>{m}</span><span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:11,fontWeight:700,color:["var(--green)","var(--blue)","var(--purple)"][i]}}>{fmt(v)}</span></div>
  <div style={{height:4,background:"var(--border)",borderRadius:2,overflow:"hidden"}}><div style={{width:`${(v/t)*100}%`,height:"100%",background:["var(--green)","var(--blue)","var(--purple)"][i],borderRadius:2}}/></div>
  </div>
  );})}
  </div>
  <div style={{background:"var(--surface)",border:"1px solid var(--border)",borderRadius:12,padding:"14px 16px"}}>
  <div style={{fontSize:12,fontWeight:700,marginBottom:10}}>Top Productos</div>
- {metrics.topProducts.length===0?<div style={{fontSize:11,color:"var(--t3)",fontFamily:"'DM Mono',monospace"}}>Sin datos</div>
+ {metrics.topProducts.length===0?<div style={{fontSize:11,color:"var(--t3)",fontFamily:"'JetBrains Mono',monospace"}}>Sin datos</div>
  :metrics.topProducts.map((p,i)=>(
  <div key={i} style={{marginBottom:7}}>
- <div style={{display:"flex",justifyContent:"space-between",marginBottom:2}}><span style={{fontSize:11,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",flex:1,marginRight:6}}>{p.name}</span><span style={{fontFamily:"'DM Mono',monospace",fontSize:11,fontWeight:700,color:"var(--amber)",flexShrink:0}}>{fmt(p.revenue)}</span></div>
+ <div style={{display:"flex",justifyContent:"space-between",marginBottom:2}}><span style={{fontSize:11,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",flex:1,marginRight:6}}>{p.name}</span><span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:11,fontWeight:700,color:"var(--amber)",flexShrink:0}}>{fmt(p.revenue)}</span></div>
  <div style={{height:3,background:"var(--border)",borderRadius:2,overflow:"hidden"}}><div style={{width:`${(p.revenue/(metrics.topProducts[0]?.revenue||1))*100}%`,height:"100%",background:"var(--amber)",borderRadius:2}}/></div>
  </div>
  ))}
@@ -934,9 +934,9 @@ const ReportsModule=()=>{
  {orders.map((o,i)=>(
  <div key={o.id} style={{display:"flex",alignItems:"center",gap:12,padding:"10px 16px",borderBottom:i<orders.length-1?"1px solid var(--border)":"none"}}
  onMouseEnter={e=>e.currentTarget.style.background="var(--el)"} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
- <span style={{fontFamily:"'DM Mono',monospace",fontSize:11,color:"var(--t3)",width:48}}>{o.id}</span>
- <div style={{flex:1}}><div style={{fontSize:12,fontWeight:600}}>{o.type==="mesa"?`Mesa ${o.table}`:o.type==="llevar"?"Llevar":"Delivery"}</div><div style={{fontSize:10,color:"var(--t2)",fontFamily:"'DM Mono',monospace"}}>{o.items.length} items · {o.paymentMethod}</div></div>
- <span style={{fontFamily:"'DM Mono',monospace",fontSize:14,fontWeight:700}}>{fmt(o.totalPaid)}</span>
+ <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:11,color:"var(--t3)",width:48}}>{o.id}</span>
+ <div style={{flex:1}}><div style={{fontSize:12,fontWeight:600}}>{o.type==="mesa"?`Mesa ${o.table}`:o.type==="llevar"?"Llevar":"Delivery"}</div><div style={{fontSize:10,color:"var(--t2)",fontFamily:"'JetBrains Mono',monospace"}}>{o.items.length} items · {o.paymentMethod}</div></div>
+ <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:14,fontWeight:700}}>{fmt(o.totalPaid)}</span>
  <Badge variant={o.paymentMethod==="efectivo"?"success":o.paymentMethod==="tarjeta"?"info":"purple"}>{o.paymentMethod==="transferencia"?"transf.":o.paymentMethod}</Badge>
  </div>
  ))}
@@ -950,9 +950,9 @@ const OrderRow=({order,isLast,company})=>{
  return <div>
  <div style={{display:"flex",alignItems:"center",gap:12,padding:"12px 16px",borderBottom:!isLast?"1px solid var(--border)":"none"}}
  onMouseEnter={e=>e.currentTarget.style.background="var(--el)"} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
- <span style={{fontFamily:"'DM Mono',monospace",fontSize:11,color:"var(--t3)",width:48}}>{order.id}</span>
- <div style={{flex:1}}><div style={{fontSize:12,fontWeight:600}}>{order.type==="mesa"?`Mesa ${order.table}`:order.type==="llevar"?"Llevar":"Delivery"}</div><div style={{fontSize:10,color:"var(--t2)",fontFamily:"'DM Mono',monospace"}}>{order.items.length} items · {order.paymentMethod}</div></div>
- <span style={{fontFamily:"'DM Mono',monospace",fontSize:14,fontWeight:700}}>{fmt(order.totalPaid)}</span>
+ <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:11,color:"var(--t3)",width:48}}>{order.id}</span>
+ <div style={{flex:1}}><div style={{fontSize:12,fontWeight:600}}>{order.type==="mesa"?`Mesa ${order.table}`:order.type==="llevar"?"Llevar":"Delivery"}</div><div style={{fontSize:10,color:"var(--t2)",fontFamily:"'JetBrains Mono',monospace"}}>{order.items.length} items · {order.paymentMethod}</div></div>
+ <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:14,fontWeight:700}}>{fmt(order.totalPaid)}</span>
  <button onClick={()=>setShowTicket(true)} title="Ver ticket" style={{width:28,height:28,borderRadius:7,background:"var(--amber-g)",border:"1px solid rgba(245,166,35,.2)",color:"var(--amber)",cursor:"pointer",fontSize:13,display:"flex",alignItems:"center",justifyContent:"center"}}></button>
  <Badge variant="success" dot>Pagada</Badge>
  </div>
@@ -966,12 +966,12 @@ const OrdersModule=()=>{
  return <div style={{padding:18,display:"flex",flexDirection:"column",gap:14,overflowY:"auto",height:"100%"}}>
  <h2 style={{fontSize:18,fontWeight:800}}>Órdenes del Turno</h2>
  {orders.length===0
- ?<div style={{padding:"50px 20px",textAlign:"center",color:"var(--t3)"}}><div style={{fontSize:40,marginBottom:10}}></div><div style={{fontFamily:"'DM Mono',monospace",fontSize:11}}>Sin órdenes completadas</div></div>
+ ?<div style={{padding:"50px 20px",textAlign:"center",color:"var(--t3)"}}><div style={{fontSize:40,marginBottom:10}}></div><div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:11}}>Sin órdenes completadas</div></div>
  :<div style={{background:"var(--surface)",border:"1px solid var(--border)",borderRadius:12,overflow:"hidden"}}>
  {orders.map((o,i)=><OrderRow key={o.id} order={o} isLast={i===orders.length-1} company={company}/>)}
  <div style={{padding:"8px 16px",borderTop:"1px solid var(--border)",display:"flex",justifyContent:"space-between"}}>
- <span style={{fontSize:10,color:"var(--t3)",fontFamily:"'DM Mono',monospace"}}>{orders.length} órdenes</span>
- <span style={{fontFamily:"'DM Mono',monospace",fontSize:12,fontWeight:700,color:"var(--amber)"}}>Total: {fmt(orders.reduce((s,o)=>s+o.totalPaid,0))}</span>
+ <span style={{fontSize:10,color:"var(--t3)",fontFamily:"'JetBrains Mono',monospace"}}>{orders.length} órdenes</span>
+ <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:12,fontWeight:700,color:"var(--amber)"}}>Total: {fmt(orders.reduce((s,o)=>s+o.totalPaid,0))}</span>
  </div>
  </div>
  }
@@ -1056,12 +1056,12 @@ const BackupPanel=()=>{
     <div key={s.label} style={{padding:"10px 8px",background:"var(--el)",border:"1px solid var(--border)",borderRadius:9,textAlign:"center"}}>
      <div style={{fontSize:18,marginBottom:3}}>{s.icon}</div>
      <div style={{fontSize:16,fontWeight:800,color:"var(--amber)"}}>{s.val}</div>
-     <div style={{fontSize:9,color:"var(--t3)",fontFamily:"'DM Mono',monospace",marginTop:1}}>{s.label}</div>
+     <div style={{fontSize:9,color:"var(--t3)",fontFamily:"'JetBrains Mono',monospace",marginTop:1}}>{s.label}</div>
     </div>
    ))}
   </div>
   {/* Message */}
-  {msg&&<div style={{padding:"9px 13px",borderRadius:8,marginBottom:12,fontSize:11,fontFamily:"'DM Mono',monospace",background:msg.type==="success"?"var(--green-g)":"var(--red-g)",border:`1px solid ${msg.type==="success"?"rgba(61,220,132,.25)":"rgba(255,77,77,.25)"}`,color:msg.type==="success"?"var(--green)":"var(--red)"}}>{msg.text}</div>}
+  {msg&&<div style={{padding:"9px 13px",borderRadius:8,marginBottom:12,fontSize:11,fontFamily:"'JetBrains Mono',monospace",background:msg.type==="success"?"var(--green-g)":"var(--red-g)",border:`1px solid ${msg.type==="success"?"rgba(61,220,132,.25)":"rgba(255,77,77,.25)"}`,color:msg.type==="success"?"var(--green)":"var(--red)"}}>{msg.text}</div>}
   {/* Actions */}
   <div style={{display:"flex",gap:10,flexWrap:"wrap"}}>
    <button onClick={exportBackup} style={{flex:1,minWidth:120,padding:"11px 14px",background:"var(--amber-g)",border:"1px solid rgba(245,166,35,.3)",borderRadius:9,cursor:"pointer",color:"var(--amber)",fontSize:12,fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center",gap:7,transition:"all .12s"}}
@@ -1078,7 +1078,7 @@ const BackupPanel=()=>{
     <span style={{fontSize:16}}>🗑️</span> Borrar Todo
    </button>
   </div>
-  <div style={{marginTop:10,fontSize:10,color:"var(--t3)",fontFamily:"'DM Mono',monospace",lineHeight:1.6}}>
+  <div style={{marginTop:10,fontSize:10,color:"var(--t3)",fontFamily:"'JetBrains Mono',monospace",lineHeight:1.6}}>
    El backup incluye productos, usuarios, clientes, órdenes y configuración · Formato JSON
   </div>
  </div>;
@@ -1092,7 +1092,7 @@ const UsersPanel=()=>{
  const users=state.users||[];
  return <div style={{background:"var(--surface)",border:"1px solid var(--border)",borderRadius:13,padding:"18px"}}>
   <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
-   <div><div style={{fontSize:13,fontWeight:700}}> Usuarios del Sistema</div><div style={{fontSize:10,color:"var(--t2)",fontFamily:"'DM Mono',monospace",marginTop:2}}>{users.length} usuario{users.length!==1?"s":""} registrado{users.length!==1?"s":""}</div></div>
+   <div><div style={{fontSize:13,fontWeight:700}}> Usuarios del Sistema</div><div style={{fontSize:10,color:"var(--t2)",fontFamily:"'JetBrains Mono',monospace",marginTop:2}}>{users.length} usuario{users.length!==1?"s":""} registrado{users.length!==1?"s":""}</div></div>
    <Btn v="primary" icon="+" sz="sm" onClick={()=>{setEditUser(null);setShowModal(true);}}>Nuevo</Btn>
   </div>
   <div style={{display:"flex",flexDirection:"column",gap:8}}>
@@ -1102,21 +1102,21 @@ const UsersPanel=()=>{
      <div style={{width:36,height:36,borderRadius:9,background:`${r.color}18`,border:`1px solid ${r.color}35`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}>{r.icon}</div>
      <div style={{flex:1,minWidth:0}}>
       <div style={{fontSize:13,fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{u.name}</div>
-      <div style={{fontSize:10,fontFamily:"'DM Mono',monospace",color:r.color,marginTop:1}}>{r.label}</div>
+      <div style={{fontSize:10,fontFamily:"'JetBrains Mono',monospace",color:r.color,marginTop:1}}>{r.label}</div>
      </div>
-     <div style={{fontFamily:"'DM Mono',monospace",fontSize:11,color:"var(--t3)",letterSpacing:".15em",marginRight:8}}>{"•".repeat(u.pin.length)}</div>
+     <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:11,color:"var(--t3)",letterSpacing:".15em",marginRight:8}}>{"•".repeat(u.pin.length)}</div>
      <button onClick={()=>{setEditUser(u);setShowModal(true);}} style={{width:28,height:28,borderRadius:7,background:"var(--amber-g)",border:"1px solid rgba(245,166,35,.2)",color:"var(--amber)",cursor:"pointer",fontSize:13,display:"flex",alignItems:"center",justifyContent:"center"}}>✏</button>
      <button onClick={()=>setDelUser(u)} style={{width:28,height:28,borderRadius:7,background:"var(--red-g)",border:"1px solid rgba(255,77,77,.2)",color:"var(--red)",cursor:"pointer",fontSize:13,display:"flex",alignItems:"center",justifyContent:"center"}}>🗑</button>
     </div>
    );})}
-   {users.length===0&&<div style={{padding:"24px",textAlign:"center",color:"var(--t3)",fontSize:11,fontFamily:"'DM Mono',monospace"}}>Sin usuarios — crea el primero</div>}
+   {users.length===0&&<div style={{padding:"24px",textAlign:"center",color:"var(--t3)",fontSize:11,fontFamily:"'JetBrains Mono',monospace"}}>Sin usuarios — crea el primero</div>}
   </div>
   {showModal&&<UserModal user={editUser} onClose={()=>{setShowModal(false);setEditUser(null);}}/>}
   {delUser&&<Modal onClose={()=>setDelUser(null)} title="Eliminar usuario" maxW={340}>
    <div style={{padding:"16px 20px",display:"flex",flexDirection:"column",gap:14}}>
     <div style={{display:"flex",gap:12,alignItems:"center",padding:"12px 14px",background:"var(--red-g)",border:"1px solid rgba(255,77,77,.25)",borderRadius:10}}>
      <span style={{fontSize:22}}>{(ROLES[delUser.role]||ROLES.cajero).icon}</span>
-     <div><div style={{fontSize:13,fontWeight:700,color:"var(--red)"}}>{delUser.name}</div><div style={{fontSize:10,color:"var(--t2)",fontFamily:"'DM Mono',monospace",marginTop:2}}>{(ROLES[delUser.role]||ROLES.cajero).label}</div></div>
+     <div><div style={{fontSize:13,fontWeight:700,color:"var(--red)"}}>{delUser.name}</div><div style={{fontSize:10,color:"var(--t2)",fontFamily:"'JetBrains Mono',monospace",marginTop:2}}>{(ROLES[delUser.role]||ROLES.cajero).label}</div></div>
     </div>
     <p style={{fontSize:12,color:"var(--t2)",lineHeight:1.6}}>Este usuario ya no podrá iniciar sesión en el sistema.</p>
    </div>
@@ -1134,7 +1134,7 @@ const UserModal=({user,onClose})=>{
  const [form,setForm]=useState({name:user?.name||"",pin:user?.pin||"",role:user?.role||"vendedor",...(user||{})});
  const set=(k,v)=>setForm(p=>({...p,[k]:v}));
  const valid=form.name.trim().length>=2&&form.pin.length===4&&/^\d{4}$/.test(form.pin);
- const ls={fontSize:10,color:"var(--t3)",fontFamily:"'DM Mono',monospace",letterSpacing:".08em",textTransform:"uppercase",fontWeight:600,display:"block",marginBottom:5};
+ const ls={fontSize:10,color:"var(--t3)",fontFamily:"'JetBrains Mono',monospace",letterSpacing:".08em",textTransform:"uppercase",fontWeight:600,display:"block",marginBottom:5};
  const is={width:"100%",padding:"10px 14px",minHeight:42,background:"var(--el)",border:"1px solid var(--border)",borderRadius:9,color:"var(--t1)",fontSize:13,outline:"none"};
  return <Modal onClose={onClose} title={isNew?"Nuevo Usuario":"Editar Usuario"} maxW={380}>
   <div style={{padding:18,display:"flex",flexDirection:"column",gap:14}}>
@@ -1142,7 +1142,7 @@ const UserModal=({user,onClose})=>{
    <div>
     <label style={ls}>PIN (4 dígitos) *</label>
     <input type="password" inputMode="numeric" maxLength={4} value={form.pin} onChange={e=>set("pin",e.target.value.replace(/\D/g,"").slice(0,4))} placeholder="••••" style={{...is,letterSpacing:"0.3em",textAlign:"center",fontSize:20}} onFocus={e=>e.target.style.borderColor="var(--amber)"} onBlur={e=>e.target.style.borderColor="var(--border)"}/>
-    <div style={{fontSize:10,color:"var(--t3)",fontFamily:"'DM Mono',monospace",marginTop:4}}>Solo números · exactamente 4 dígitos</div>
+    <div style={{fontSize:10,color:"var(--t3)",fontFamily:"'JetBrains Mono',monospace",marginTop:4}}>Solo números · exactamente 4 dígitos</div>
    </div>
    <div>
     <label style={ls}>Rol *</label>
@@ -1173,7 +1173,7 @@ const SettingsModule=()=>{
  if(file.size>500000){alert("Logo debe pesar menos de 500KB");return;}
  const r=new FileReader();r.onload=ev=>{set("logo",ev.target.result);};r.readAsDataURL(file);
  };
- const ls={fontSize:10,color:"var(--t3)",fontFamily:"'DM Mono',monospace",letterSpacing:".08em",textTransform:"uppercase",fontWeight:600,display:"block",marginBottom:5};
+ const ls={fontSize:10,color:"var(--t3)",fontFamily:"'JetBrains Mono',monospace",letterSpacing:".08em",textTransform:"uppercase",fontWeight:600,display:"block",marginBottom:5};
  const is={width:"100%",padding:"10px 14px",minHeight:42,background:"var(--el)",border:"1px solid var(--border)",borderRadius:9,color:"var(--t1)",fontSize:13,outline:"none",transition:"border-color .15s"};
  const focusAmber=e=>e.target.style.borderColor="var(--amber)";
  const blurBorder=e=>e.target.style.borderColor="var(--border)";
@@ -1205,7 +1205,7 @@ const SettingsModule=()=>{
  <input type="file" accept="image/*" onChange={handleLogo} style={{display:"none"}}/>
  </label>
  {form.logo&&<button onClick={()=>set("logo","")} style={{marginLeft:8,padding:"7px 11px",background:"var(--red-g)",border:"1px solid rgba(255,77,77,.2)",borderRadius:7,cursor:"pointer",fontSize:11,color:"var(--red)"}}>Quitar</button>}
- <div style={{fontSize:10,color:"var(--t3)",fontFamily:"'DM Mono',monospace",marginTop:5}}>PNG/JPG · máx 500KB</div>
+ <div style={{fontSize:10,color:"var(--t3)",fontFamily:"'JetBrains Mono',monospace",marginTop:5}}>PNG/JPG · máx 500KB</div>
  </div>
  </div>
  </div>
@@ -1228,7 +1228,7 @@ const SettingsModule=()=>{
  {/* Preview ticket */}
  <div style={{background:"var(--surface)",border:"1px solid var(--border)",borderRadius:13,padding:"18px",position:"sticky",top:0}}>
  <div style={{fontSize:13,fontWeight:700,marginBottom:14}}> Vista Previa del Ticket</div>
- <div style={{background:"#fff",borderRadius:9,padding:"18px 14px",fontFamily:"'DM Mono',monospace",fontSize:11,color:"#111",lineHeight:1.7,boxShadow:"0 4px 20px rgba(0,0,0,.15)"}}>
+ <div style={{background:"#fff",borderRadius:9,padding:"18px 14px",fontFamily:"'JetBrains Mono',monospace",fontSize:11,color:"#111",lineHeight:1.7,boxShadow:"0 4px 20px rgba(0,0,0,.15)"}}>
  <div style={{textAlign:"center",marginBottom:10}}>
  {form.logo?<img src={form.logo} style={{maxWidth:60,maxHeight:60,display:"block",margin:"0 auto 5px",borderRadius:6}} alt="logo"/>:<div style={{fontSize:20,fontWeight:900,letterSpacing:".1em"}}>{(form.name||"GP").slice(0,2).toUpperCase()}</div>}
  <div style={{fontWeight:700,fontSize:13}}>{form.name||"Mi Restaurante"}</div>
@@ -1250,7 +1250,7 @@ const SettingsModule=()=>{
  <div style={{borderTop:"1px dashed #ccc",margin:"8px 0"}}/>
  <div style={{textAlign:"center",fontSize:10,color:"#888"}}>{form.footerMsg||"¡Gracias por su visita!"}</div>
  </div>
- <div style={{marginTop:12,padding:"9px 13px",background:"var(--amber-g)",border:"1px solid rgba(245,166,35,.2)",borderRadius:8,fontSize:11,color:"var(--amber)",fontFamily:"'DM Mono',monospace"}}>
+ <div style={{marginTop:12,padding:"9px 13px",background:"var(--amber-g)",border:"1px solid rgba(245,166,35,.2)",borderRadius:8,fontSize:11,color:"var(--amber)",fontFamily:"'JetBrains Mono',monospace"}}>
   Guarda los cambios para aplicarlos a los tickets
  </div>
  </div>
@@ -1274,7 +1274,7 @@ const ToastSystem=({notifications,dispatch})=>{
  const c={success:{bg:"var(--green-g)",b:"rgba(61,220,132,.35)",c:"var(--green)"},warning:{bg:"var(--amber-g)",b:"rgba(245,166,35,.35)",c:"var(--amber)"},error:{bg:"var(--red-g)",b:"rgba(255,77,77,.35)",c:"var(--red)"},info:{bg:"var(--blue-g)",b:"rgba(77,159,255,.35)",c:"var(--blue)"}}[n.type]||{bg:"var(--el)",b:"var(--border)",c:"var(--t2)"};
  return <div key={n.id} style={{padding:"9px 13px",background:c.bg,border:`1px solid ${c.b}`,borderRadius:9,maxWidth:280,boxShadow:"0 8px 24px rgba(0,0,0,.4)",animation:"toast 3.2s ease forwards",display:"flex",alignItems:"center",gap:8}}>
  <span style={{fontSize:13,flexShrink:0}}>{n.type==="success"?"":n.type==="error"?"":n.type==="warning"?"":""}</span>
- <span style={{fontSize:11,color:c.c,fontFamily:"'DM Mono',monospace",lineHeight:1.4}}>{n.msg}</span>
+ <span style={{fontSize:11,color:c.c,fontFamily:"'JetBrains Mono',monospace",lineHeight:1.4}}>{n.msg}</span>
  </div>;
  })}
  </div>;
@@ -1330,9 +1330,9 @@ const AppShell=()=>{
  <div style={{padding:col?"16px 0":"16px 13px",display:"flex",alignItems:"center",justifyContent:col?"center":"flex-start",gap:9,borderBottom:"1px solid var(--border)",minHeight:60}}>
  {company.logo
  ?<img src={company.logo} style={{width:30,height:30,borderRadius:7,objectFit:"cover",flexShrink:0}} alt="logo"/>
- :<div style={{width:30,height:30,borderRadius:7,background:"var(--amber)",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,fontWeight:900,color:"#0D0F0E"}}>{(company.name||"G").slice(0,1)}</div>
+ :<div style={{width:30,height:30,borderRadius:7,background:"var(--amber)",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,fontWeight:900,color:"var(--bg)"}}>{(company.name||"G").slice(0,1)}</div>
  }
- {!col&&<div style={{minWidth:0}}><div style={{fontSize:12,fontWeight:800,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{company.name||"GASTRO POS"}</div><div style={{fontSize:8,color:"var(--amber)",fontFamily:"'DM Mono',monospace",letterSpacing:".1em"}}>v1.0</div></div>}
+ {!col&&<div style={{minWidth:0}}><div style={{fontSize:12,fontWeight:800,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{company.name||"GASTRO POS"}</div><div style={{fontSize:8,color:"var(--amber)",fontFamily:"'JetBrains Mono',monospace",letterSpacing:".1em"}}>v1.0</div></div>}
  </div>
  <div style={{flex:1,padding:"6px 5px",display:"flex",flexDirection:"column",gap:2}}>
  {allowed.map(item=>{const act=activeView===item.id;const alert=alerts[item.id]||0;return(
@@ -1340,14 +1340,14 @@ const AppShell=()=>{
  style={{display:"flex",alignItems:"center",justifyContent:col?"center":"flex-start",gap:8,padding:col?"10px":"10px 11px",borderRadius:8,background:act?"var(--amber-g)":"transparent",border:`1px solid ${act?"rgba(245,166,35,.25)":"transparent"}`,color:act?"var(--amber)":"var(--t2)",cursor:"pointer",transition:"all .13s",fontSize:12,fontWeight:act?700:500,width:"100%",textAlign:"left",position:"relative"}}>
  <span style={{fontSize:15,flexShrink:0}}>{item.icon}</span>
  {!col&&<span style={{flex:1}}>{item.label}</span>}
- {!col&&alert>0&&<span style={{background:"var(--amber)",color:"#0D0F0E",borderRadius:20,padding:"1px 5px",fontSize:9,fontWeight:800,fontFamily:"'DM Mono',monospace"}}>{alert}</span>}
+ {!col&&alert>0&&<span style={{background:"var(--amber)",color:"var(--bg)",borderRadius:20,padding:"1px 5px",fontSize:9,fontWeight:800,fontFamily:"'JetBrains Mono',monospace"}}>{alert}</span>}
  {col&&alert>0&&<span style={{position:"absolute",top:4,right:4,width:6,height:6,borderRadius:"50%",background:"var(--amber)"}}/>}
  </button>
  );})}
  </div>
  <div style={{padding:col?"12px 0":"12px 13px",borderTop:"1px solid var(--border)",display:"flex",alignItems:"center",justifyContent:col?"center":"flex-start",gap:7}}>
  <span style={{width:6,height:6,borderRadius:"50%",background:state.isOnline?"var(--green)":"var(--red)",animation:state.isOnline?"syncRing 3s infinite":"pulse 1s infinite",flexShrink:0}}/>
- {!col&&<span style={{fontSize:9,color:state.isOnline?"var(--green)":"var(--red)",fontFamily:"'DM Mono',monospace",letterSpacing:".07em"}}>{state.isOnline?"EN LÍNEA":"OFFLINE"}</span>}
+ {!col&&<span style={{fontSize:9,color:state.isOnline?"var(--green)":"var(--red)",fontFamily:"'JetBrains Mono',monospace",letterSpacing:".07em"}}>{state.isOnline?"EN LÍNEA":"OFFLINE"}</span>}
  </div>
  </nav>
 
@@ -1356,14 +1356,14 @@ const AppShell=()=>{
  <header style={{height:56,background:"var(--surface)",borderBottom:"1px solid var(--border)",display:"flex",alignItems:"center",padding:"0 14px",gap:10,flexShrink:0}}>
  <button onClick={()=>setCol(p=>!p)} style={{width:30,height:30,borderRadius:7,background:"var(--el)",border:"1px solid var(--border)",color:"var(--t2)",cursor:"pointer",fontSize:13,display:"flex",alignItems:"center",justifyContent:"center"}}></button>
  <h1 style={{fontSize:13,fontWeight:700,flex:1}}>{NAV.find(n=>n.id===activeView)?.label||""}</h1>
- <div style={{fontFamily:"'DM Mono',monospace",fontSize:11,color:"var(--t2)"}}>{clock.toLocaleTimeString("es",{hour:"2-digit",minute:"2-digit"})}</div>
+ <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:11,color:"var(--t2)"}}>{clock.toLocaleTimeString("es",{hour:"2-digit",minute:"2-digit"})}</div>
  <div style={{display:"flex",alignItems:"center",gap:5,padding:"4px 9px",background:"var(--el)",border:"1px solid var(--border)",borderRadius:7}}>
- <span style={{fontSize:9,color:"var(--t3)",fontFamily:"'DM Mono',monospace"}}>TURNO</span>
- <span style={{fontSize:11,color:"var(--amber)",fontFamily:"'DM Mono',monospace",fontWeight:500}}>{elapsed}</span>
+ <span style={{fontSize:9,color:"var(--t3)",fontFamily:"'JetBrains Mono',monospace"}}>TURNO</span>
+ <span style={{fontSize:11,color:"var(--amber)",fontFamily:"'JetBrains Mono',monospace",fontWeight:500}}>{elapsed}</span>
  </div>
  <div style={{display:"flex",alignItems:"center",gap:8,padding:"5px 10px",background:"var(--el)",border:"1px solid var(--border)",borderRadius:7}}>
  <div style={{width:24,height:24,borderRadius:6,background:`${r.color}18`,border:`1px solid ${r.color}35`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:13}}>{r.icon}</div>
- <div><div style={{fontSize:11,fontWeight:700,lineHeight:1}}>{session.user.name.split(" ")[0]}</div><div style={{fontSize:9,color:"var(--t3)",fontFamily:"'DM Mono',monospace"}}>{r.label}</div></div>
+ <div><div style={{fontSize:11,fontWeight:700,lineHeight:1}}>{session.user.name.split(" ")[0]}</div><div style={{fontSize:9,color:"var(--t3)",fontFamily:"'JetBrains Mono',monospace"}}>{r.label}</div></div>
  </div>
  <button onClick={()=>dispatch({type:"SET_ONLINE",val:!state.isOnline})} title={state.isOnline?"Simular offline":"Reconectar"}
  style={{width:30,height:30,borderRadius:7,background:state.isOnline?"var(--el)":"var(--red-g)",border:`1px solid ${state.isOnline?"var(--border)":"rgba(255,77,77,.3)"}`,color:state.isOnline?"var(--t3)":"var(--red)",cursor:"pointer",fontSize:13,display:"flex",alignItems:"center",justifyContent:"center"}}>
@@ -1436,5 +1436,23 @@ try {
  document.getElementById('loading').innerHTML = '<div style="color:#FF4D4D;font-family:monospace;padding:20px;text-align:center"><div style="font-size:40px;margin-bottom:12px"></div><div style="font-size:13px;margin-bottom:8px">Error al cargar</div><div style="font-size:11px;color:#8A9490;max-width:300px">'+e.message+'</div></div>';
 }
  </script>
+</body>
+
+<!-- PWA -->
+<script>
+const _manifest={name:"Gastro POS",short_name:"GastroPOS",description:"Sistema de gestión para restaurantes",start_url:".",scope:".",display:"standalone",orientation:"portrait",background_color:"#F4F6F5",theme_color:"#059669",icons:[{src:"https://placehold.co/192x192/059669/ffffff?text=G",sizes:"192x192",type:"image/png",purpose:"any maskable"},{src:"https://placehold.co/512x512/059669/ffffff?text=G",sizes:"512x512",type:"image/png",purpose:"any maskable"}]};
+const _mb=new Blob([JSON.stringify(_manifest)],{type:"application/manifest+json"});
+const _ml=document.createElement("link");_ml.rel="manifest";_ml.href=URL.createObjectURL(_mb);document.head.appendChild(_ml);
+const _tm=document.createElement("meta");_tm.name="theme-color";_tm.content="#059669";document.head.appendChild(_tm);
+const _am=document.createElement("meta");_am.name="apple-mobile-web-app-capable";_am.content="yes";document.head.appendChild(_am);
+const _at=document.createElement("meta");_at.name="apple-mobile-web-app-status-bar-style";_at.content="default";document.head.appendChild(_at);
+const _an=document.createElement("meta");_an.name="apple-mobile-web-app-title";_an.content="GastroPOS";document.head.appendChild(_an);
+if("serviceWorker" in navigator){
+  const _sw=`const CACHE="gastropos-v1";self.addEventListener("install",e=>{self.skipWaiting();});self.addEventListener("activate",e=>{self.clients.claim();});self.addEventListener("fetch",e=>{e.respondWith(fetch(e.request).then(r=>{const rc=r.clone();caches.open(CACHE).then(c=>c.put(e.request,rc));return r;}).catch(()=>caches.match(e.request)));});`;
+  const _swb=new Blob([_sw],{type:"application/javascript"});
+  navigator.serviceWorker.register(URL.createObjectURL(_swb)).catch(()=>{});
+}
+</script>
+
 </body>
 </html>
