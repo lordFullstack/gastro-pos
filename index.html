@@ -982,6 +982,108 @@ const OrdersModule=()=>{
 // ═══ CONFIGURACIÓN ═══
 
 
+
+const BackupPanel=()=>{
+ const {state}=useStore();
+ const [importing,setImporting]=useState(false);
+ const [msg,setMsg]=useState(null);
+
+ const exportBackup=()=>{
+  const data={
+   version:"gastropos_v1",
+   exportedAt:new Date().toISOString(),
+   products:state.products,
+   clients:state.clients,
+   users:state.users,
+   orders:state.orders,
+   orderCounter:state.orderCounter,
+   company:state.company,
+  };
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a");
+  const date=new Date().toISOString().slice(0,10);
+  a.href=url;a.download=`gastropos_backup_${date}.json`;a.click();
+  URL.revokeObjectURL(url);
+  setMsg({type:"success",text:"Backup exportado correctamente"});
+  setTimeout(()=>setMsg(null),3000);
+ };
+
+ const importBackup=e=>{
+  const file=e.target.files[0];if(!file)return;
+  const r=new FileReader();
+  r.onload=ev=>{
+   try{
+    const data=JSON.parse(ev.target.result);
+    if(data.version!=="gastropos_v1")throw new Error("Formato inválido");
+    localStorage.setItem("gastropos_v1",JSON.stringify({
+     products:data.products||[],
+     clients:data.clients||[],
+     users:data.users||[],
+     orders:data.orders||[],
+     orderCounter:data.orderCounter||1,
+     company:data.company||{},
+    }));
+    setMsg({type:"success",text:"Backup restaurado. Recargando..."});
+    setTimeout(()=>window.location.reload(),1500);
+   }catch(err){
+    setMsg({type:"error",text:"Archivo inválido: "+err.message});
+    setTimeout(()=>setMsg(null),4000);
+   }
+  };
+  r.readAsText(file);
+  e.target.value="";
+ };
+
+ const clearData=()=>{
+  if(!confirm("¿Borrar TODOS los datos? Esta acción no se puede deshacer."))return;
+  localStorage.removeItem("gastropos_v1");
+  window.location.reload();
+ };
+
+ const stats=[
+  {label:"Productos",val:state.products.length,icon:"📦"},
+  {label:"Usuarios",val:state.users.length,icon:"👤"},
+  {label:"Clientes",val:state.clients.length,icon:"🏢"},
+  {label:"Órdenes",val:state.orders.length,icon:"🧾"},
+ ];
+
+ return <div style={{background:"var(--surface)",border:"1px solid var(--border)",borderRadius:13,padding:"18px"}}>
+  <div style={{fontSize:13,fontWeight:700,marginBottom:14}}>💾 Respaldo de Datos</div>
+  {/* Stats */}
+  <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8,marginBottom:16}}>
+   {stats.map(s=>(
+    <div key={s.label} style={{padding:"10px 8px",background:"var(--el)",border:"1px solid var(--border)",borderRadius:9,textAlign:"center"}}>
+     <div style={{fontSize:18,marginBottom:3}}>{s.icon}</div>
+     <div style={{fontSize:16,fontWeight:800,color:"var(--amber)"}}>{s.val}</div>
+     <div style={{fontSize:9,color:"var(--t3)",fontFamily:"'DM Mono',monospace",marginTop:1}}>{s.label}</div>
+    </div>
+   ))}
+  </div>
+  {/* Message */}
+  {msg&&<div style={{padding:"9px 13px",borderRadius:8,marginBottom:12,fontSize:11,fontFamily:"'DM Mono',monospace",background:msg.type==="success"?"var(--green-g)":"var(--red-g)",border:`1px solid ${msg.type==="success"?"rgba(61,220,132,.25)":"rgba(255,77,77,.25)"}`,color:msg.type==="success"?"var(--green)":"var(--red)"}}>{msg.text}</div>}
+  {/* Actions */}
+  <div style={{display:"flex",gap:10,flexWrap:"wrap"}}>
+   <button onClick={exportBackup} style={{flex:1,minWidth:120,padding:"11px 14px",background:"var(--amber-g)",border:"1px solid rgba(245,166,35,.3)",borderRadius:9,cursor:"pointer",color:"var(--amber)",fontSize:12,fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center",gap:7,transition:"all .12s"}}
+    onMouseEnter={e=>e.currentTarget.style.background="rgba(245,166,35,.2)"} onMouseLeave={e=>e.currentTarget.style.background="var(--amber-g)"}>
+    <span style={{fontSize:16}}>⬇️</span> Exportar Backup
+   </button>
+   <label style={{flex:1,minWidth:120,padding:"11px 14px",background:"var(--el)",border:"1px solid var(--border)",borderRadius:9,cursor:"pointer",color:"var(--t2)",fontSize:12,fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center",gap:7,transition:"all .12s"}}
+    onMouseEnter={e=>{e.currentTarget.style.borderColor="var(--amber)";e.currentTarget.style.color="var(--amber)";}} onMouseLeave={e=>{e.currentTarget.style.borderColor="var(--border)";e.currentTarget.style.color="var(--t2)";}}>
+    <span style={{fontSize:16}}>⬆️</span> Importar Backup
+    <input type="file" accept=".json" onChange={importBackup} style={{display:"none"}}/>
+   </label>
+   <button onClick={clearData} style={{padding:"11px 14px",background:"var(--red-g)",border:"1px solid rgba(255,77,77,.2)",borderRadius:9,cursor:"pointer",color:"var(--red)",fontSize:12,fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center",gap:7,transition:"all .12s"}}
+    onMouseEnter={e=>e.currentTarget.style.background="rgba(255,77,77,.15)"} onMouseLeave={e=>e.currentTarget.style.background="var(--red-g)"}>
+    <span style={{fontSize:16}}>🗑️</span> Borrar Todo
+   </button>
+  </div>
+  <div style={{marginTop:10,fontSize:10,color:"var(--t3)",fontFamily:"'DM Mono',monospace",lineHeight:1.6}}>
+   El backup incluye productos, usuarios, clientes, órdenes y configuración · Formato JSON
+  </div>
+ </div>;
+};
+
 const UsersPanel=()=>{
  const {state,dispatch}=useStore();
  const [showModal,setShowModal]=useState(false);
@@ -1153,7 +1255,8 @@ const SettingsModule=()=>{
  </div>
  </div>
  </div>
- {/* Users section */}
+ {/* Backup & Users */}
+ <BackupPanel/>
  <UsersPanel/>
  </div>;
 };
@@ -1278,13 +1381,45 @@ const AppShell=()=>{
 };
 
 // ═══ ENTRY POINT ═══
+const STORAGE_KEY="gastropos_v1";
+function loadState(){
+ try{
+  const raw=localStorage.getItem(STORAGE_KEY);
+  if(!raw)return initialState;
+  const saved=JSON.parse(raw);
+  return{
+   ...initialState,
+   products:saved.products??initialState.products,
+   clients:saved.clients??initialState.clients,
+   users:saved.users??initialState.users,
+   orders:saved.orders??[],
+   orderCounter:saved.orderCounter??1,
+   company:saved.company??initialState.company,
+   session:null,
+   notifications:[],
+  };
+ }catch(e){return initialState;}
+}
+function saveState(state){
+ try{
+  localStorage.setItem(STORAGE_KEY,JSON.stringify({
+   products:state.products,
+   clients:state.clients,
+   users:state.users,
+   orders:state.orders,
+   orderCounter:state.orderCounter,
+   company:state.company,
+  }));
+ }catch(e){}
+}
 function App(){
- const [state,dispatch]=useReducer(reducer,initialState);
+ const [state,dispatch]=useReducer(reducer,null,loadState);
+ useEffect(()=>{ saveState(state); },[state]);
  useEffect(()=>{
- const on=()=>dispatch({type:"SET_ONLINE",val:true});
- const off=()=>dispatch({type:"SET_ONLINE",val:false});
- window.addEventListener("online",on);window.addEventListener("offline",off);
- return()=>{window.removeEventListener("online",on);window.removeEventListener("offline",off);};
+  const on=()=>dispatch({type:"SET_ONLINE",val:true});
+  const off=()=>dispatch({type:"SET_ONLINE",val:false});
+  window.addEventListener("online",on);window.addEventListener("offline",off);
+  return()=>{window.removeEventListener("online",on);window.removeEventListener("offline",off);};
  },[]);
  return <Ctx.Provider value={{state,dispatch}}>
  <GlobalCSS/>
