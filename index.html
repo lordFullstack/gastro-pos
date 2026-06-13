@@ -694,7 +694,7 @@ const ConfirmDeleteModal=({product,onClose,onConfirm})=>(
 );
 
 const InventoryModule=()=>{
- const {state}=useStore();
+ const {state,dispatch}=useStore();
  const {products}=state;
  const [cat,setCat]=useState("all");const [search,setSearch]=useState("");
  const [showNew,setShowNew]=useState(false);const [stockProd,setStockProd]=useState(null);const [deleteProd,setDeleteProd]=useState(null);
